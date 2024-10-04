@@ -1,0 +1,8 @@
+services:
+    front:
+        build: ./frontend
+        ports:
+            - "9999:8080"
+        volumes:
+            - ./frontend/src:/frontend/src
+            - ./frontend/package.json:/frontend/package.json
