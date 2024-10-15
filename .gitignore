@@ -1,7 +1,0 @@
-/.idea/
-
-/ai-module/logs/
-/ai-module/models/
-/ai-module/predict/
-/ai-module/build/
-/ai-module/image_classifier.egg-info/
