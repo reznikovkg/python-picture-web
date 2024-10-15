@@ -2,11 +2,22 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
+from pathlib import Path
+
+from dotenv import load_dotenv
+from python_picture_web.initializer import Initializer
 
 
 def main():
+
+    env_path = os.path.join(Path(__file__).resolve().parent, ".env.dev")
+    load_dotenv(env_path)
+
     """Run administrative tasks."""
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'python_picture_web.settings')
+
+    Initializer().execute()
+
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:
