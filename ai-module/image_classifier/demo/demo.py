@@ -28,10 +28,8 @@ if __name__ == '__main__':
                                   logging.StreamHandler()])
 
     env_path = os.path.join(Path(__file__).resolve().parent.parent.parent, ".env.dev")
+
     Initializer().apply(env_path)
     MainImageClassifierBySkinLesion().prepare()
     result = MainImageClassifierBySkinLesion().apply(image_data)
-
-    print(f'\nПараметры компиляции нейронок: {result[0]}')
-    print(f'Индивидуальные результаты каждой модели: {result[1]}')
-    print(f'Ансамблевый результат: {result[2]}\n')
+    print(result)

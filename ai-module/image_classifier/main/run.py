@@ -36,7 +36,7 @@ class MainImageClassifierBySkinLesion(ImageClassifierBySkinLesion):
         model_paths = [model1_path, model2_path, model3_path]
         cls.__classifier = DefaultImageClassifierBySkinLesion(model_paths=model_paths)
 
-    def apply(self, image_data: bytes) -> Tuple[dict, List[SkinLesion], SkinLesion]:
+    def apply(self, image_data: bytes) -> dict:
         logger.info(f"[{self.__class__.__name__}] -> apply start:")
         start_time = time.time()
 
@@ -48,4 +48,4 @@ class MainImageClassifierBySkinLesion(ImageClassifierBySkinLesion):
         finish_time = time.time() - start_time
         logger.info(f"[{self.__class__.__name__}] -> apply finished with {finish_time} sec")
 
-        return params, individual_lesions, ensemble_lesion
+        return {'params': params, 'individual_predictions': individual_lesions, 'ensemble_prediction': ensemble_lesion}

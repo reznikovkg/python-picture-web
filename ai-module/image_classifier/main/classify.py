@@ -54,6 +54,13 @@ class DefaultImageClassifierBySkinLesion(ImageClassifierBySkinLesion):
         image_array = img_to_array(image)
         image_array = np.expand_dims(image_array, axis=0)
 
+        params = {
+            'optimizer': 'Adamax',
+            'learning_rate': self.learning_rate,
+            'loss': 'categorical_crossentropy',
+            'metrics': 'accuracy'
+        }
+
         tvgen = ImageDataGenerator(preprocessing_function=lambda x: x)
         predict_gen = tvgen.flow(image_array, batch_size=1, shuffle=False)
 
@@ -64,12 +71,7 @@ class DefaultImageClassifierBySkinLesion(ImageClassifierBySkinLesion):
         ensemble_prediction = self.__ensemble_predictions(predictions)
         ensemble_lesion = SkinLesion.value_of(ensemble_prediction)
 
-        return {
-            'optimizer': 'Adamax',
-            'learning_rate': self.learning_rate,
-            'loss': 'categorical_crossentropy',
-            'metrics': 'accuracy'
-        }, individual_lesions, ensemble_lesion
+        return params, individual_lesions, ensemble_lesion
 
     def __ensemble_predictions(self, predictions_list: List[np.ndarray]) -> np.ndarray:
         pr_sum = np.sum(np.array(predictions_list), axis=0)
