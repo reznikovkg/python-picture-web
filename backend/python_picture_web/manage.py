@@ -10,7 +10,7 @@ from python_picture_web.initializer import Initializer
 
 def main():
 
-    env_path = os.path.join(Path(__file__).resolve().parent, ".env.dev")
+    env_path = os.path.join(Path(__file__).resolve().parent, ".env")
     load_dotenv(env_path)
 
     """Run administrative tasks."""
