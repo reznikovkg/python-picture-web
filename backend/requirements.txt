@@ -1,0 +1,5 @@
+Django~=4.2.11
+djangorestframework~=3.15.1
+python-dotenv~=1.0.1
+requests~=2.31.0
+libs/image_classifier-1.0-py3-none-any.whl
