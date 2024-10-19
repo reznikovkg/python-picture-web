@@ -15,7 +15,7 @@ def authorization(request):
                 _user.key = a
                 _user.authorization = True
                 _user.save(update_fields=["key", "authorization"])
-                return HttpResponse(f"Key for login={_user.login} and password={_user.password} is {str(_user.key)}.")
+                return HttpResponse(_user.key)
             else:
                 return HttpResponse("User not found.")
 
