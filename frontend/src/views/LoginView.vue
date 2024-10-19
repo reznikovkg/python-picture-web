@@ -4,11 +4,11 @@
     <form @submit.prevent="loginUser">
       <div class="login__form-group">
         <label for="username">Логин:</label>
-        <input type="text" v-model="username" class="login__input" required />
+        <input type="text" v-model="username" class="login__input" required/>
       </div>
       <div class="login__form-group">
         <label for="password">Пароль:</label>
-        <input type="password" v-model="password" class="login__input" required />
+        <input type="password" v-model="password" class="login__input" required/>
       </div>
       <button type="submit" class="login__button login__button--large">Войти</button>
       <p v-if="error">{{ error }}</p>
@@ -18,7 +18,7 @@
 
 <script>
 import axiosInstance from "@/axios";
-import { ROUTES } from "@/router";
+import {ROUTES} from "@/router";
 
 export const AUTH_TOKEN = 'authToken';
 
@@ -31,15 +31,22 @@ export default {
     };
   },
   methods: {
-    async loginUser() {
-      try {
-        const response = await axiosInstance.post(this.username + '/' + this.password);
-        const token = response.data.token;
-        localStorage.setItem(AUTH_TOKEN, token);
-        await this.$router.push({ name: ROUTES.HOME });
-      } catch (error) {
-        this.error = 'Login error';
-      }
+    loginUser() {
+      axiosInstance.get('auth/',
+          {
+            params: {
+              login: this.username,
+              password: this.password,
+            }
+          })
+          .then((response) => {
+            const token = response.data;
+            localStorage.setItem(AUTH_TOKEN, token);
+            this.$router.push({name: ROUTES.HOME});
+          })
+          .catch(() => {
+            this.error = 'Login error';
+          });
     },
   },
 };
