@@ -1,50 +1,34 @@
 <template>
   <div class="table-container">
     <div class="table-container__header">
-      <button class="table-container__analyze-button">Провести анализ</button>
+      <el-button type="primary" @click="analyze">Провести анализ</el-button>
     </div>
 
-    <table class="table-container__data-table">
-      <thead>
-      <tr>
-        <th>Изображение</th>
-        <th>Модель 1</th>
-        <th>Модель 2</th>
-        <th>Модель 3</th>
-        <th>Результат</th>
-        <th>Действия</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr v-for="(item, index) in paginatedData" :key="index">
-        <td>{{ item.image }}</td>
-        <td>{{ item.firstModelResult }}</td>
-        <td>{{ item.secondModelResult }}</td>
-        <td>{{ item.thirdModelResult }}</td>
-        <td>{{ item.ensembleModelsResult }}</td>
-        <td>
-          <button @click="deleteItem(index)" class="table-container__delete-button">Удалить</button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+    <el-table :data="paginatedData" style="width: 100%">
+      <el-table-column label="Изображение" prop="image"></el-table-column>
+      <el-table-column label="Модель 1" prop="firstModelResult"></el-table-column>
+      <el-table-column label="Модель 2" prop="secondModelResult"></el-table-column>
+      <el-table-column label="Модель 3" prop="thirdModelResult"></el-table-column>
+      <el-table-column label="Результат" prop="ensembleModelsResult"></el-table-column>
+      <el-table-column label="Действия">
+        <el-button
+            type="danger"
+            size="mini"
+            @click="deleteItem(scope.$index)">
+          Удалить
+        </el-button>
+      </el-table-column>
+    </el-table>
 
     <div class="table-container__pagination">
-      <button
-          :disabled="currentPage === 1"
-          @click="changePage(currentPage - 1)"
-          class="table-container__pagination-button"
+      <el-pagination
+          layout="prev, pager, next"
+          :current-page="currentPage"
+          :page-size="itemsPerPage"
+          :total="data.length"
+          @current-change="changePage"
       >
-        Предыдущая
-      </button>
-      <span>Страница {{ currentPage }} из {{ totalPages }}</span>
-      <button
-          :disabled="currentPage === totalPages"
-          @click="changePage(currentPage + 1)"
-          class="table-container__pagination-button"
-      >
-        Следующая
-      </button>
+      </el-pagination>
     </div>
   </div>
 </template>
@@ -69,25 +53,23 @@ export default {
       const end = start + this.itemsPerPage;
       return this.data.slice(start, end);
     },
-    totalPages() {
-      return Math.ceil(this.data.length / this.itemsPerPage);
-    },
   },
   methods: {
     changePage(page) {
-      if (page >= 1 && page <= this.totalPages) {
-        this.currentPage = page;
-      }
+      this.currentPage = page;
     },
     deleteItem(index) {
       const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
       this.$emit('delete-item', globalIndex);
     },
+    analyze() {
+      this.$emit('analyze');
+    },
   },
 };
 </script>
 
-<style lang="less" scoped>
+<style scoped>
 .table-container {
   margin: 20px;
 
@@ -97,55 +79,10 @@ export default {
     margin-bottom: 10px;
   }
 
-  &__analyze-button {
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    cursor: pointer;
-
-    &:hover {
-      background-color: #45a049;
-    }
-  }
-
-  &__data-table {
-    width: 100%;
-    border-collapse: collapse;
-
-    th, td {
-      padding: 10px;
-      border: 1px solid #ddd;
-      text-align: left;
-    }
-
-    tbody tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-  }
-
-  &__delete-button {
-    padding: 5px 10px;
-    background-color: #f44336;
-    color: white;
-    border: none;
-    cursor: pointer;
-
-    &:hover {
-      background-color: #e53935;
-    }
-  }
-
   &__pagination {
+    margin-top: 10px;
     display: flex;
     justify-content: center;
-    align-items: center;
-    margin-top: 10px;
-
-    &--button {
-      padding: 5px 10px;
-      margin: 0 5px;
-    }
   }
 }
 </style>
