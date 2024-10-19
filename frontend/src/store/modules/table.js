@@ -1,4 +1,3 @@
-// store/modules/table.js
 const state = {
     tableData: [
         {
