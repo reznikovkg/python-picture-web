@@ -1,17 +1,16 @@
 <template>
   <div class="home">
-    <img alt="Vue logo" src="../assets/logo.png">
-    <ModalWindow msg="Welcome to Your Vue.js App"/>
+    <ModalWindow/>
   </div>
 </template>
 
 <script>
-import FormView from '@/components/ModalWindow.vue'
+import ModalWindow from '@/components/ModalWindow.vue'
 
 export default {
-  name: 'ModalFormView',
+  name: 'HomeView',
   components: {
-    ModalWindow: FormView
+    ModalWindow
   }
 }
 </script>
