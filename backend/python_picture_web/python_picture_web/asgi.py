@@ -10,7 +10,6 @@ https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 import os
 from pathlib import Path
 
-from channels.routing import ProtocolTypeRouter
 from django.core.asgi import get_asgi_application
 from dotenv import load_dotenv
 
@@ -22,8 +21,6 @@ if os.path.exists(env_path):
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'python_picture_web.settings')
 
-application = ProtocolTypeRouter({
-    "http": get_asgi_application(),
-})
+application = get_asgi_application()
 
 Initializer().execute()
