@@ -1,34 +1,33 @@
 <template>
   <div class="table-container">
     <div class="table-container__header">
-      <el-button type="primary" @click="analyze">Провести анализ</el-button>
+      <ElButton type="primary" @click="() => analyze()">Провести анализ</ElButton>
     </div>
 
-    <el-table :data="paginatedData" style="width: 100%">
-      <el-table-column label="Изображение" prop="image"></el-table-column>
-      <el-table-column label="Модель 1" prop="firstModelResult"></el-table-column>
-      <el-table-column label="Модель 2" prop="secondModelResult"></el-table-column>
-      <el-table-column label="Модель 3" prop="thirdModelResult"></el-table-column>
-      <el-table-column label="Результат" prop="ensembleModelsResult"></el-table-column>
-      <el-table-column label="Действия">
-        <el-button
+    <ElTable class="table-container__table" :data="paginatedData">
+      <ElTableColumn label="Изображение" prop="image"/>
+      <ElTableColumn label="Модель 1" prop="firstModelResult"/>
+      <ElTableColumn label="Модель 2" prop="secondModelResult"/>
+      <ElTableColumn label="Модель 3" prop="thirdModelResult"/>
+      <ElTableColumn label="Результат" prop="ensembleModelsResult"/>
+      <ElTableColumn label="Действия">
+        <ElButton
             type="danger"
             size="mini"
-            @click="deleteItem(scope.$index)">
+            @click="() => deleteItem(scope.$index)">
           Удалить
-        </el-button>
-      </el-table-column>
-    </el-table>
+        </ElButton>
+      </ElTableColumn>
+    </ElTable>
 
     <div class="table-container__pagination">
-      <el-pagination
+      <ElPagination
           layout="prev, pager, next"
           :current-page="currentPage"
           :page-size="itemsPerPage"
           :total="data.length"
-          @current-change="changePage"
-      >
-      </el-pagination>
+          @current-change="(page)=>changePage(page)">
+      </ElPagination>
     </div>
   </div>
 </template>
@@ -77,6 +76,10 @@ export default {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 10px;
+  }
+
+  &__table {
+    width: 100%;
   }
 
   &__pagination {
