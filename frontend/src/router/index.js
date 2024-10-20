@@ -29,7 +29,7 @@ const routes = [
         path: '/list',
         name: ROUTES.LIST,
         component: ListView,
-        meta: {requiresAuth: true},
+        meta: {requiresAuth: false},
     }
 ]
 
