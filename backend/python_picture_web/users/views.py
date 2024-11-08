@@ -7,11 +7,11 @@ from django.shortcuts import HttpResponse
 
 
 def authorization(request):
-    if request.GET:
+    if request.GET: 
         users = Users.objects.all()
         login = request.GET.get("login")
         password = request.GET.get("password")
-        for _user in users:
+        for _user in   users:
             if _user.login == login and _user.password == password:
                 a = random.randint(1000, 9999)
                 _user.key = a
