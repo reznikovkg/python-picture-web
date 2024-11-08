@@ -32,7 +32,7 @@ export default {
   },
   methods: {
     loginUser() {
-      axiosInstance.get('auth/',
+      axiosInstance.get('auth',
           {
             params: {
               login: this.username,

@@ -1,9 +1,5 @@
 <template>
   <div class="table-container">
-    <div class="table-container__header">
-      <ElButton type="primary" @click="() => analyze()">Провести анализ</ElButton>
-    </div>
-
     <ElTable class="table-container__table" :data="paginatedData">
       <ElTableColumn label="Изображение" prop="image"/>
       <ElTableColumn label="Модель 1" prop="firstModelResult"/>
@@ -11,12 +7,14 @@
       <ElTableColumn label="Модель 3" prop="thirdModelResult"/>
       <ElTableColumn label="Результат" prop="ensembleModelsResult"/>
       <ElTableColumn label="Действия">
-        <ElButton
-            type="danger"
-            size="mini"
-            @click="() => deleteItem(scope.$index)">
-          Удалить
-        </ElButton>
+        <template #default="{ $index }">
+          <ElButton
+              type="danger"
+              size="mini"
+              @click="() => deleteItem($index)">
+            Удалить
+          </ElButton>
+        </template>
       </ElTableColumn>
     </ElTable>
 
@@ -29,10 +27,16 @@
           @current-change="(page)=>changePage(page)">
       </ElPagination>
     </div>
+    <div class="table-container__bottom">
+      <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
+    </div>
   </div>
 </template>
 
 <script>
+import {mapActions} from 'vuex';
+import {ROUTES} from "@/router";
+
 export default {
   props: {
     data: {
@@ -54,16 +58,21 @@ export default {
     },
   },
   methods: {
+    ...mapActions('table', ['removeTableData']),
     changePage(page) {
       this.currentPage = page;
     },
     deleteItem(index) {
       const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
-      this.$emit('delete-item', globalIndex);
+      this.removeTableData(globalIndex);
+
+      if (this.data.length === 0) {
+        this.$router.push({name: ROUTES.HOME});
+      }
     },
-    analyze() {
-      this.$emit('analyze');
-    },
+    loadMore() {
+      this.$router.push({name: ROUTES.HOME});
+    }
   },
 };
 </script>

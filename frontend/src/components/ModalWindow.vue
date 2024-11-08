@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-loading="loading">
     <el-upload
         class="upload-demo"
         action=""
@@ -27,15 +27,20 @@
 
 <script>
 import axiosInstance from "@/axios";
+import {mapActions} from 'vuex';
+import {ROUTES} from "@/router";
 
 export default {
   data() {
     return {
       imageUrl: '',
       selectedFile: null,
+      loading: false,
     };
   },
   methods: {
+    ...mapActions('table', ['addTableData']),
+
     handleImageChange(file) {
       this.selectedFile = file.raw;
       this.imageUrl = URL.createObjectURL(file.raw);
@@ -47,15 +52,30 @@ export default {
         return;
       }
 
+      this.loading = true;
+
       const formData = new FormData();
       formData.append('image', this.selectedFile);
 
       axiosInstance.post('/back/classification-image', formData)
-          .then(() => {
-            this.$message.success('Изображение успешно загружено!');
+          .then((response) => {
+            const predictions = response.data.individual_predictions.map(prediction => prediction[0]);
+            const ensemble = response.data.ensemble_prediction[0];
+            const newData = {
+              image: this.selectedFile.name,
+              firstModelResult: predictions[0],
+              secondModelResult: predictions[1],
+              thirdModelResult: predictions[2],
+              ensembleModelsResult: ensemble
+            };
+            this.addTableData(newData);
+            this.$router.push({name: ROUTES.LIST});
           })
           .catch(() => {
             this.$message.error('Ошибка при загрузке изображения.');
+          })
+          .finally(() => {
+            this.loading = false;
           });
     },
   },

@@ -1,48 +1,27 @@
+const TABLE_DATA_KEY = 'tableData'
+
 const state = {
-    tableData: [
-        {
-            image: 'image1.jpg',
-            firstModelResult: 'A',
-            secondModelResult: 'B',
-            thirdModelResult: 'C',
-            ensembleModelsResult: 'D'
-        },
-        {
-            image: 'image2.jpg',
-            firstModelResult: 'E',
-            secondModelResult: 'F',
-            thirdModelResult: 'G',
-            ensembleModelsResult: 'H'
-        },
-        {
-            image: 'image3.jpg',
-            firstModelResult: 'I',
-            secondModelResult: 'J',
-            thirdModelResult: 'K',
-            ensembleModelsResult: 'L'
-        },
-        {
-            image: 'image4.jpg',
-            firstModelResult: 'M',
-            secondModelResult: 'N',
-            thirdModelResult: 'O',
-            ensembleModelsResult: 'P'
-        },
-        {
-            image: 'image5.jpg',
-            firstModelResult: 'Q',
-            secondModelResult: 'R',
-            thirdModelResult: 'S',
-            ensembleModelsResult: 'T'
-        },
-        {
-            image: 'image6.jpg',
-            firstModelResult: 'U',
-            secondModelResult: 'V',
-            thirdModelResult: 'W',
-            ensembleModelsResult: 'X'
-        },
-    ],
+    tableData: JSON.parse(localStorage.getItem(TABLE_DATA_KEY)) || [],
+};
+
+const mutations = {
+    ADD_TABLE_DATA(state, newData) {
+        state.tableData.push(newData);
+        localStorage.setItem(TABLE_DATA_KEY, JSON.stringify(state.tableData));
+    },
+    REMOVE_TABLE_DATA(state, index) {
+        state.tableData.splice(index, 1);
+        localStorage.setItem(TABLE_DATA_KEY, JSON.stringify(state.tableData));
+    },
+};
+
+const actions = {
+    addTableData({ commit }, newData) {
+        commit('ADD_TABLE_DATA', newData);
+    },
+    removeTableData({ commit }, index) {
+        commit('REMOVE_TABLE_DATA', index);
+    },
 };
 
 const getters = {
@@ -52,5 +31,7 @@ const getters = {
 export default {
     namespaced: true,
     state,
+    mutations,
+    actions,
     getters,
 };
