@@ -63,11 +63,11 @@ export default {
 
             this.addData(
                 {
-                  image: this.selectedFile.name,  // Используйте имя файла для изображения
-                  model1: predictions[0],        // Модели 1, 2 и 3
+                  image: this.selectedFile.name,
+                  model1: predictions[0],
                   model2: predictions[1],
                   model3: predictions[2],
-                  ensemble: ensemble              // Ensemble предсказание
+                  ensemble: ensemble
                 })
                 .then(() => {
                   this.$router.push({name: ROUTES.LIST});
