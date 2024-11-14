@@ -3,16 +3,15 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '^/auth': {
-        //запускать бэк на 8000 порту или поменять тут
-        target: 'http://localhost:8000',
+        target: 'http://back:8000',
         changeOrigin: true,
       },
       '^/back/classification-image': {
-        target: 'http://localhost:8000',
+        target: 'http://back:8000',
         changeOrigin: true,
       },
       '^/cnn_table': {
-        target: 'http://localhost:8000',
+        target: 'http://back:8000',
         changeOrigin: true,
       }
     }
