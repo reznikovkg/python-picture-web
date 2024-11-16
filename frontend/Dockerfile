@@ -4,12 +4,12 @@ RUN npm install -g @vue/cli@~5.0.0
 
 WORKDIR /front
 
-COPY package.json ./
+COPY package.json .
 
 RUN npm install
 
-COPY ./ ./
+COPY . .
 
 EXPOSE 8080
 
-ENTRYPOINT npm run serve
+CMD ["npm", "run", "serve"]

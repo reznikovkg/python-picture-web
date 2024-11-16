@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-loading="loading">
     <el-upload
         class="upload-demo"
         action=""
@@ -26,16 +26,20 @@
 </template>
 
 <script>
-import axiosInstance from "@/axios";
+import {mapActions} from 'vuex';
+import {ROUTES} from "@/router";
 
 export default {
   data() {
     return {
       imageUrl: '',
       selectedFile: null,
+      loading: false,
     };
   },
   methods: {
+    ...mapActions('table', ['predictData', 'addData']),
+
     handleImageChange(file) {
       this.selectedFile = file.raw;
       this.imageUrl = URL.createObjectURL(file.raw);
@@ -47,16 +51,31 @@ export default {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('image', this.selectedFile);
+      this.loading = true;
 
-      axiosInstance.post('/back/classification-image', formData)
-          .then(() => {
-            this.$message.success('Изображение успешно загружено!');
+      console.log('Файл для предсказания:', this.selectedFile);
+
+      this.predictData(this.selectedFile)
+          .then(response => {
+
+            const predictions = response.data.individual_predictions.map(prediction => String(prediction[0]));
+            const ensemble = String(response.data.ensemble_prediction[0]);
+
+            this.addData(
+                {
+                  image: this.selectedFile.name,
+                  model1: predictions[0],
+                  model2: predictions[1],
+                  model3: predictions[2],
+                  ensemble: ensemble
+                })
+                .then(() => {
+                  this.$router.push({name: ROUTES.LIST});
+                })
           })
-          .catch(() => {
-            this.$message.error('Ошибка при загрузке изображения.');
-          });
+          .finally(() => {
+            this.loading = false;
+          })
     },
   },
 };

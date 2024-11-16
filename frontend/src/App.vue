@@ -1,10 +1,5 @@
 <template>
   <div id="app">
-    <nav>
-      <RouterLink :to="{ name: ROUTES.HOME}">Home</RouterLink> |
-      <RouterLink :to="{ name: ROUTES.LOGIN}">Login</RouterLink> |
-      <RouterLink :to="{ name: ROUTES.LIST}">List</RouterLink>
-    </nav>
     <RouterView/>
   </div>
 </template>
