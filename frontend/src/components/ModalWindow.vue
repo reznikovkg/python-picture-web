@@ -35,6 +35,7 @@ export default {
       imageUrl: '',
       selectedFile: null,
       loading: false,
+      uploadTime: null,
     };
   },
   methods: {
@@ -43,6 +44,7 @@ export default {
     handleImageChange(file) {
       this.selectedFile = file.raw;
       this.imageUrl = URL.createObjectURL(file.raw);
+      this.uploadTime = new Date().toISOString();
     },
 
     submitImage() {
@@ -67,7 +69,8 @@ export default {
                   model1: predictions[0],
                   model2: predictions[1],
                   model3: predictions[2],
-                  ensemble: ensemble
+                  ensemble: ensemble,
+                  uploadTime: this.uploadTime,
                 })
                 .then(() => {
                   this.$router.push({name: ROUTES.LIST});

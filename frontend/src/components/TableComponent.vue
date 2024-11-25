@@ -1,11 +1,13 @@
 <template>
   <div class="table-container">
+    <div class="table-container__controls">
+      <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
+      <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
+    </div>
     <ElTable class="table-container__table" :data="paginatedData">
       <ElTableColumn label="Изображение" prop="image"/>
-      <ElTableColumn label="Модель 1" prop="model_1"/>
-      <ElTableColumn label="Модель 2" prop="model_2"/>
-      <ElTableColumn label="Модель 3" prop="model_3"/>
-      <ElTableColumn label="Результат" prop="ensemble"/>
+      <ElTableColumn label="Дата и время загрузки" prop="uploadTime"/>
+      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)" :formatter="formatModelsAndResult"/>
       <ElTableColumn label="Действия">
         <template #default="{ $index }">
           <ElButton
@@ -27,15 +29,13 @@
           @current-change="(page)=>changePage(page)">
       </ElPagination>
     </div>
-    <div class="table-container__bottom">
-      <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
-    </div>
   </div>
 </template>
 
 <script>
 import {mapActions} from 'vuex';
 import {ROUTES} from "@/router";
+import {MessageBox} from 'element-ui';
 
 export default {
   props: {
@@ -59,17 +59,37 @@ export default {
   },
   methods: {
     ...mapActions('table', ['removeData']),
+    formatModelsAndResult(row) {
+      return `${row.model_1} / ${row.model_2} / ${row.model_3} (${row.ensemble})`;
+    },
     changePage(page) {
       this.currentPage = page;
     },
     deleteItem(index) {
-      const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
-      const itemToRemove = this.data[globalIndex];
-      this.removeData(itemToRemove.id);
+      MessageBox.confirm(
+        'Вы уверены, что хотите удалить этот элемент?',
+        'Подтверждение удаления',
+        {
+          confirmButtonText: 'Да',
+          cancelButtonText: 'Нет',
+          type: 'warning',
+        }
+      )
+        .then(() => {
+          const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
+          const itemToRemove = this.data[globalIndex];
+          this.removeData(itemToRemove.id);
 
-      if (this.data.length === 0) {
-        this.$router.push({name: ROUTES.HOME});
-      }
+          if (this.data.length === 0) {
+            this.$router.push({ name: ROUTES.HOME });
+          }
+        })
+        .catch(() => {
+          this.$message.info('Удаление отменено.');
+        });
+    },
+    deleteAll() {
+      console.log('Удалить все нажато!');
     },
     loadMore() {
       this.$router.push({name: ROUTES.HOME});
@@ -81,21 +101,27 @@ export default {
 <style scoped>
 .table-container {
   margin: 20px;
+}
 
-  &__header {
+.table-container__header {
     display: flex;
     justify-content: flex-end;
     margin-bottom: 10px;
   }
 
-  &__table {
+.table-container__controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+  }
+
+.table-container__table {
     width: 100%;
   }
 
-  &__pagination {
+.table-container__pagination {
     margin-top: 10px;
     display: flex;
     justify-content: center;
   }
-}
 </style>

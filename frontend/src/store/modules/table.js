@@ -21,7 +21,7 @@ const actions = {
                 console.error('Ошибка при получении данных:', error);
             });
     },
-    addData({dispatch}, {image, model1, model2, model3, ensemble}
+    addData({dispatch}, {image, model1, model2, model3, ensemble, uploadTime}
     ) {
         const authToken = localStorage.getItem('authToken')
         return axiosInstance
@@ -32,6 +32,7 @@ const actions = {
                     model_2: String(model2),
                     model_3: String(model3),
                     ensemble: ensemble.toString(),
+                    upload_time: uploadTime,
                 }
             })
             .then(() => {
