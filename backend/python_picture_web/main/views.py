@@ -20,13 +20,15 @@ def cnn_result_post(request, key):
         except Users.DoesNotExist:
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
-        image = request.GET.get('image')
+        image = request.FILES.get('image')
+        if not image:
+            return HttpResponse('Файл изображения обязателен.', status=400)
         model_1 = request.GET.get('model_1')
         model_2 = request.GET.get('model_2')
         model_3 = request.GET.get('model_3')
         ensemble = request.GET.get('ensemble')
 
-        if not all([user, image, model_1, model_2, model_3, ensemble]):
+        if not all([model_1, model_2, model_3, ensemble]):
             return HttpResponse('Отсутствуют обязательные параметры.', status=400)
 
         analyse = Analyse.objects.create(
@@ -44,7 +46,7 @@ def cnn_result_post(request, key):
             "data": {
                 "id": analyse.id,
                 "user_key": user.key,
-                "image": analyse.image,
+                "image": analyse.image.url,
                 "model_1": analyse.model_1,
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
@@ -94,6 +96,21 @@ def delete_row(request, key):
         row_id = request.GET.get("id")
         Analyse.objects.filter(id=row_id, user_key=user).delete()
         if Analyse.objects.filter(id=row_id, user_key=user):
+            return HttpResponse(False, status=200)
+        else:
+            return HttpResponse(True, status=200)
+
+    return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
+def delete_all(request, key):
+    if request.method == "GET":
+        try:
+            user = Users.objects.get(key=key)
+        except Users.DoesNotExist:
+            return HttpResponse('Пользователь с таким ключом не найден.', status=404)
+
+        Analyse.objects.filter(user_key=user).delete()
+        if Analyse.objects.filter(user_key=user):
             return HttpResponse(False, status=200)
         else:
             return HttpResponse(True, status=200)
