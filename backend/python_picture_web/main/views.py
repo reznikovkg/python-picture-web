@@ -3,7 +3,8 @@ from django.shortcuts import HttpResponse
 from .models import Analyse
 from users.models import Users
 from django.views.decorators.csrf import csrf_exempt
-import io
+from datetime import datetime
+import os
 
 from rest_framework import status
 from rest_framework.decorators import api_view, renderer_classes
@@ -23,10 +24,12 @@ def cnn_result_post(request, key):
         image = request.FILES.get('image')
         if not image:
             return HttpResponse('Файл изображения обязателен.', status=400)
-        model_1 = request.GET.get('model_1')
-        model_2 = request.GET.get('model_2')
-        model_3 = request.GET.get('model_3')
-        ensemble = request.GET.get('ensemble')
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+        model_1 = request.POST.get('model_1')
+        model_2 = request.POST.get('model_2')
+        model_3 = request.POST.get('model_3')
+        ensemble = request.POST.get('ensemble')
 
         if not all([model_1, model_2, model_3, ensemble]):
             return HttpResponse('Отсутствуют обязательные параметры.', status=400)
@@ -34,6 +37,7 @@ def cnn_result_post(request, key):
         analyse = Analyse.objects.create(
             user_key=user,
             image=image,
+            datetime=formatted_datetime,
             model_1=model_1,
             model_2=model_2,
             model_3=model_3,
@@ -47,10 +51,11 @@ def cnn_result_post(request, key):
                 "id": analyse.id,
                 "user_key": user.key,
                 "image": analyse.image.url,
+                "date": analyse.datetime,
                 "model_1": analyse.model_1,
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
-                "ensemble": analyse.ensemble
+                "result": analyse.ensemble
             }
         })
 
@@ -94,7 +99,13 @@ def delete_row(request, key):
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
         row_id = request.GET.get("id")
-        Analyse.objects.filter(id=row_id, user_key=user).delete()
+        analyse = Analyse.objects.filter(id=row_id, user_key=user).delete()
+        if os.path.exists(str(analyse.image.url)[1:]):
+            os.remove(str(analyse.image.url)[1:])
+            analyse.delete()
+        else:
+            analyse.delete()
+
         if Analyse.objects.filter(id=row_id, user_key=user):
             return HttpResponse(False, status=200)
         else:
@@ -109,7 +120,14 @@ def delete_all(request, key):
         except Users.DoesNotExist:
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
-        Analyse.objects.filter(user_key=user).delete()
+        analyses = Analyse.objects.filter(user_key=user)
+        for analyse in analyses:
+            if os.path.exists(str(analyse.image.url)[1:]):
+                os.remove(str(analyse.image.url)[1:])
+                analyse.delete()
+            else:
+                analyse.delete()
+
         if Analyse.objects.filter(user_key=user):
             return HttpResponse(False, status=200)
         else:
