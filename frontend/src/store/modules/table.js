@@ -15,32 +15,30 @@ const actions = {
         const authToken = localStorage.getItem('authToken')
         return axiosInstance.get(`cnn_table/${authToken}/get`)
             .then((response) => {
+                console.log('Полученные данные:', response.data);
                 commit('SET_TABLE_DATA', response.data);
             })
             .catch(error => {
                 console.error('Ошибка при получении данных:', error);
             });
     },
-    addData({dispatch}, {image, model1, model2, model3, ensemble, uploadTime}
+    addData({dispatch}, {imageFile, model1, model2, model3, ensemble}
     ) {
         const authToken = localStorage.getItem('authToken')
-        return axiosInstance
-            .post(`/cnn_table/${authToken}/add`, {}, {
-                params: {
-                    image: String(image),
-                    model_1: String(model1),
-                    model_2: String(model2),
-                    model_3: String(model3),
-                    ensemble: ensemble.toString(),
-                    upload_time: uploadTime,
-                }
-            })
-            .then(() => {
-                dispatch('fetchData');
-            })
-            .catch((error) => {
-                console.error('Ошибка при записи в таблицу:', error);
-            });
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        formData.append('model_1', model1);
+        formData.append('model_2', model2);
+        formData.append('model_3', model3);
+        formData.append('ensemble', ensemble);
+        
+        return axiosInstance.post(`/cnn_table/${authToken}/add`, formData)
+        .then(() => {
+            dispatch('fetchData');
+        })
+        .catch((error) => {
+            console.error('Ошибка при записи в таблицу:', error);
+        });
     },
     // eslint-disable-next-line no-unused-vars
     predictData({ commit },selectedFile) {
@@ -63,6 +61,17 @@ const actions = {
             })
             .catch(error => {
                 console.error('Ошибка при удалении данных:', error);
+            });
+    },
+    removeAllData({ dispatch }) {
+        const authToken = localStorage.getItem('authToken');
+
+        return axiosInstance.get(`/cnn_table/${authToken}/delete_all`)
+            .then(() => {
+                dispatch('fetchData');
+            })
+            .catch(error => {
+                console.error('Ошибка при удалении всех данных:', error);
             });
     },
 };

@@ -77,7 +77,8 @@ def get_result(request, key):
         analyse_data = [
             {
                 "id": record.id,
-                "image": record.image,
+                "image": record.image.url,
+                "date": record.datetime,
                 "model_1": record.model_1,
                 "model_2": record.model_2,
                 "model_3": record.model_3,
@@ -99,9 +100,10 @@ def delete_row(request, key):
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
         row_id = request.GET.get("id")
-        analyse = Analyse.objects.filter(id=row_id, user_key=user).delete()
-        if os.path.exists(str(analyse.image.url)[1:]):
-            os.remove(str(analyse.image.url)[1:])
+        analyse = Analyse.objects.get(id=row_id, user_key=user)
+
+        if os.path.exists('python_picture_web/' + str(analyse.image.url)[1:]):            
+            os.remove('python_picture_web/' + str(analyse.image.url)[1:])
             analyse.delete()
         else:
             analyse.delete()
@@ -122,8 +124,8 @@ def delete_all(request, key):
 
         analyses = Analyse.objects.filter(user_key=user)
         for analyse in analyses:
-            if os.path.exists(str(analyse.image.url)[1:]):
-                os.remove(str(analyse.image.url)[1:])
+            if os.path.exists('python_picture_web/' + str(analyse.image.url)[1:]):
+                os.remove('python_picture_web/' + str(analyse.image.url)[1:])
                 analyse.delete()
             else:
                 analyse.delete()
