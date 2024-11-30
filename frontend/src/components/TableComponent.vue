@@ -256,7 +256,20 @@ export default {
 
 .table-container__modal-window--image {
   width: 100%;
-  max-height: 400px;
+  max-height: 700px;
+  object-fit: contain;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.table-container__modal-window--image img {
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  margin: 0 auto;
   object-fit: contain;
 }
 </style>
