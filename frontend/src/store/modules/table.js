@@ -19,6 +19,7 @@ const actions = {
                 commit('SET_TABLE_DATA', response.data);
             })
             .catch(error => {
+                commit('SET_TABLE_DATA', []);
                 console.error('Ошибка при получении данных:', error);
             });
     },
