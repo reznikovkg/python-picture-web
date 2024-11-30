@@ -3,22 +3,24 @@
     <div class="table-container__controls">
       <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
       <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
-      <el-upload
+      <ElButton type="danger" @click="() => logout()">Выход</ElButton>
+      <ElUpload
           ref="upload"
           class="upload-demo"
           action=""
-          :on-change="() => handleImageChange"
+          :on-change="(file) => handleImageChange(file)"
           :auto-upload="false"
           :show-file-list="false"
           style="display: none;"
       >
-      </el-upload>
+      </ElUpload>
     </div>
 
     <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
       <ElTableColumn label="Изображение" prop="image"/>
       <ElTableColumn label="Дата и время загрузки" prop="date"/>
-      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)" :formatter="(row) => formatModelsAndResult(row)"/>
+      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)"
+                     :formatter="(row) => formatModelsAndResult(row)"/>
       <ElTableColumn label="Действия">
         <template #default="{ $index }">
           <ElButton
@@ -30,7 +32,7 @@
         </template>
       </ElTableColumn>
       <template #empty>
-        <p>Нет данных для отображения. Таблица пустая.</p> <!-- Ваше сообщение о том, что данных нет -->
+        <p>Нет данных для отображения. Таблица пустая.</p>
       </template>
     </ElTable>
 
@@ -44,30 +46,32 @@
       </ElPagination>
     </div>
 
-    <el-dialog
+    <ElDialog
         :visible.sync="isModalVisible"
         :title="modalTitle"
         width="40%"
-        @close="() => closeModal"
-    >
+        @close="() => closeModal()"
+        class="table-container__modal-window--image">
       <div v-if="modalTitle">
-        <img :src='modalTitle' alt="Изображение"
-             style="width: 100%; max-height: 400px; object-fit: contain;"/>
+        <img :src='modalTitle' alt="Изображение"/>
       </div>
       <div v-else>
         <p>Загрузка изображения...</p>
       </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button @click="() => closeModal">Закрыть</el-button>
+      <div slot="footer">
+        <ElButton @click="() => closeModal()">Закрыть</ElButton>
       </div>
-    </el-dialog>
+    </ElDialog>
   </div>
 </template>
 
 <script>
 import {mapActions} from 'vuex';
 import {MessageBox} from 'element-ui';
+import {AUTH_TOKEN} from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
+import {ROUTES} from "@/router";
+import router from "@/router";
 
 export default {
   props: {
@@ -98,6 +102,25 @@ export default {
   methods: {
     axiosInstance,
     ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'addData']),
+
+    logout() {
+      MessageBox.confirm(
+          'Вы уверены, что хотите выйти?',
+          'Подтверждение выходы',
+          {
+            confirmButtonText: 'Да',
+            cancelButtonText: 'Нет',
+            type: 'warning',
+          }
+      )
+          .then(() => {
+            localStorage.removeItem(AUTH_TOKEN)
+            router.push(ROUTES.LOGIN)
+          })
+          .catch(() => {
+            console.log("Выход отменён")
+          });
+    },
     formatModelsAndResult(row) {
       return `${row.model_1} / ${row.model_2} / ${row.model_3} (${row.ensemble})`;
     },
@@ -116,13 +139,14 @@ export default {
       )
           .then(() => {
             const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
-            const itemToRemove = this.data[globalIndex];+
-            this.removeData(itemToRemove.id).then(() => {
-              this.$store.dispatch('table/fetchData');
-            });
+            const itemToRemove = this.data[globalIndex];
+            +
+                this.removeData(itemToRemove.id).then(() => {
+                  this.$store.dispatch('table/fetchData');
+                });
           })
           .catch(() => {
-            this.$message.info('Удаление отменено.');
+            console.log('Удаление отменено.');
           });
     },
     deleteAll() {
@@ -228,5 +252,11 @@ export default {
   margin-top: 10px;
   display: flex;
   justify-content: center;
+}
+
+.table-container__modal-window--image {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
 }
 </style>
