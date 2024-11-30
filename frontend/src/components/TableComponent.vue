@@ -7,7 +7,7 @@
           ref="upload"
           class="upload-demo"
           action=""
-          :on-change="handleImageChange"
+          :on-change="() => handleImageChange"
           :auto-upload="false"
           :show-file-list="false"
           style="display: none;"
@@ -15,10 +15,10 @@
       </el-upload>
     </div>
 
-    <ElTable class="table-container__table" :data="paginatedData" @row-click="openModal">
+    <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
       <ElTableColumn label="Изображение" prop="image"/>
       <ElTableColumn label="Дата и время загрузки" prop="date"/>
-      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)" :formatter="formatModelsAndResult"/>
+      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)" :formatter="(row) => formatModelsAndResult(row)"/>
       <ElTableColumn label="Действия">
         <template #default="{ $index }">
           <ElButton
@@ -48,7 +48,7 @@
         :visible.sync="isModalVisible"
         :title="modalTitle"
         width="40%"
-        @close="()=>closeModal"
+        @close="() => closeModal"
     >
       <div v-if="modalTitle">
         <img :src='modalTitle' alt="Изображение"
@@ -58,7 +58,7 @@
         <p>Загрузка изображения...</p>
       </div>
       <div slot="footer" class="dialog-footer">
-        <el-button @click="closeModal">Закрыть</el-button>
+        <el-button @click="() => closeModal">Закрыть</el-button>
       </div>
     </el-dialog>
   </div>
