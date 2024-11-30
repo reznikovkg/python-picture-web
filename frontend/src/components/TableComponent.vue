@@ -51,7 +51,7 @@
         @close="()=>closeModal"
     >
       <div v-if="modalTitle">
-        <img :src='imageUrl' alt="Изображение"
+        <img :src='modalTitle' alt="Изображение"
              style="width: 100%; max-height: 400px; object-fit: contain;"/>
       </div>
       <div v-else>
