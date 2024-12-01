@@ -102,11 +102,11 @@ def delete_row(request, key):
         row_id = request.GET.get("id")
         analyse = Analyse.objects.get(id=row_id, user_key=user)
 
-        if os.path.exists('python_picture_web/' + str(analyse.image.url)[1:]):            
-            os.remove('python_picture_web/' + str(analyse.image.url)[1:])
+        if os.path.exists('python_picture_web' + str(analyse.image.url)):
+            os.remove('python_picture_web' + str(analyse.image.url))
             analyse.delete()
         else:
-            analyse.delete()
+            return HttpResponse("Picture not found", status=404)
 
         if Analyse.objects.filter(id=row_id, user_key=user):
             return HttpResponse(False, status=200)
@@ -124,11 +124,11 @@ def delete_all(request, key):
 
         analyses = Analyse.objects.filter(user_key=user)
         for analyse in analyses:
-            if os.path.exists('python_picture_web/' + str(analyse.image.url)[1:]):
-                os.remove('python_picture_web/' + str(analyse.image.url)[1:])
+            if os.path.exists('python_picture_web' + str(analyse.image.url)):
+                os.remove('python_picture_web' + str(analyse.image.url))
                 analyse.delete()
             else:
-                analyse.delete()
+                return HttpResponse("Picture not found", status=404)
 
         if Analyse.objects.filter(user_key=user):
             return HttpResponse(False, status=200)
