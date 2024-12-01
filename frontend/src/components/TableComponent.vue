@@ -1,67 +1,68 @@
 <template>
-  <div class="table-container" v-loading="loading">
-    <div class="table-container__controls">
-      <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
-      <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
-      <ElButton type="danger" @click="() => logout()">Выход</ElButton>
-      <ElUpload
-          ref="upload"
-          class="upload-demo"
-          action=""
-          :on-change="(file) => handleImageChange(file)"
-          :auto-upload="false"
-          :show-file-list="false"
-          style="display: none;"
-      >
-      </ElUpload>
-    </div>
+  <div class="animated_container" v-loading="loading">
+    <div class="animated_container__table-container">
+      <div class="table-container__controls">
+        <ElButton type="primary" @click="() => loadMore()">Добавить</ElButton>
+        <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
+        <ElButton type="danger" @click="() => logout()">Выход</ElButton>
+        <ElUpload
+            ref="upload"
+            class="upload-demo"
+            action=""
+            :on-change="(file) => handleImageChange(file)"
+            :auto-upload="false"
+            :show-file-list="false">
+        </ElUpload>
+      </div>
 
-    <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
-      <ElTableColumn label="Изображение" prop="image"/>
-      <ElTableColumn label="Дата и время загрузки" prop="date"/>
-      <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)"
-                     :formatter="(row) => formatModelsAndResult(row)"/>
-      <ElTableColumn label="Действия">
-        <template #default="{ $index }">
-          <ElButton
-              type="danger"
-              size="mini"
-              @click.stop="() => deleteItem($index)">
-            Удалить
-          </ElButton>
+      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
+        <ElTableColumn label="Изображение" prop="image"/>
+        <ElTableColumn label="Дата и время загрузки" prop="date"/>
+        <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)"
+                       :formatter="(row) => formatModelsAndResult(row)"/>
+        <ElTableColumn label="Действия">
+          <template #default="{ $index }">
+            <ElButton
+                type="danger"
+                size="mini"
+                @click.stop="() => deleteItem($index)">
+              Удалить
+            </ElButton>
+          </template>
+        </ElTableColumn>
+        <template #empty>
+          <p>Нет данных для отображения. Таблица пустая.</p>
         </template>
-      </ElTableColumn>
-      <template #empty>
-        <p>Нет данных для отображения. Таблица пустая.</p>
-      </template>
-    </ElTable>
+      </ElTable>
 
-    <div class="table-container__pagination">
-      <ElPagination
-          layout="prev, pager, next"
-          :current-page="currentPage"
-          :page-size="itemsPerPage"
-          :total="data.length"
-          @current-change="(page)=>changePage(page)">
-      </ElPagination>
+      <ElDialog
+          :visible.sync="isModalVisible"
+          :title="modalTitle"
+          width="40%"
+          @close="() => closeModal()"
+          class="table-container__modal-window--image">
+        <div v-if="modalTitle">
+          <img :src="modalTitle" alt="Изображение"/>
+        </div>
+        <div v-else>
+          <p>Загрузка изображения...</p>
+        </div>
+        <div slot="footer" class="el-dialog__footer">
+          <ElButton @click="() => closeModal()">Закрыть</ElButton>
+        </div>
+      </ElDialog>
     </div>
-
-    <ElDialog
-        :visible.sync="isModalVisible"
-        :title="modalTitle"
-        width="40%"
-        @close="() => closeModal()"
-        class="table-container__modal-window--image">
-      <div v-if="modalTitle">
-        <img :src='modalTitle' alt="Изображение"/>
+    <div class="animated_container__pagination-container">
+      <div class="pagination-container__pagination">
+        <ElPagination
+            layout="prev, pager, next"
+            :current-page="currentPage"
+            :page-size="itemsPerPage"
+            :total="data.length"
+            @current-change="(page)=>changePage(page)">
+        </ElPagination>
       </div>
-      <div v-else>
-        <p>Загрузка изображения...</p>
-      </div>
-      <div slot="footer">
-        <ElButton @click="() => closeModal()">Закрыть</ElButton>
-      </div>
-    </ElDialog>
+    </div>
   </div>
 </template>
 
@@ -106,7 +107,7 @@ export default {
     logout() {
       MessageBox.confirm(
           'Вы уверены, что хотите выйти?',
-          'Подтверждение выходы',
+          'Подтверждение выхода',
           {
             confirmButtonText: 'Да',
             cancelButtonText: 'Нет',
@@ -228,48 +229,49 @@ export default {
 </script>
 
 <style scoped>
-.table-container {
-  margin: 20px;
-}
-
-.table-container__header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.table-container__controls {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 10px;
-}
-
-.table-container__table {
-  width: 100%;
-}
-
-.table-container__pagination {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
-}
-
-.table-container__modal-window--image {
-  width: 100%;
-  max-height: 700px;
-  object-fit: contain;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  box-sizing: border-box;
-}
-
-.table-container__modal-window--image img {
+img {
   max-width: 100%;
   max-height: 100%;
-  display: block;
-  margin: 0 auto;
   object-fit: contain;
+}
+
+.animated_container__pagination-container {
+
+  &__pagination {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+    margin-top: 20px;
+  }
+}
+
+.animated_container__table-container {
+  margin: 20px;
+  text-align: end;
+
+  &__header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  &__controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    text-align: center;
+  }
+
+  &__table {
+    width: 100%;
+  }
+
+  &__modal-window {
+    &--image {
+      padding: 10px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+  }
 }
 </style>
