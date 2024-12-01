@@ -63,13 +63,14 @@ export default {
 
             this.addData(
                 {
-                  image: this.selectedFile.name,
+                  imageFile: this.selectedFile,
                   model1: predictions[0],
                   model2: predictions[1],
                   model3: predictions[2],
-                  ensemble: ensemble
+                  ensemble: ensemble,
                 })
                 .then(() => {
+                  this.$store.dispatch('table/fetchData');
                   this.$router.push({name: ROUTES.LIST});
                 })
           })

@@ -3,7 +3,8 @@ from django.shortcuts import HttpResponse
 from .models import Analyse
 from users.models import Users
 from django.views.decorators.csrf import csrf_exempt
-import io
+from datetime import datetime
+import os
 
 from rest_framework import status
 from rest_framework.decorators import api_view, renderer_classes
@@ -20,18 +21,23 @@ def cnn_result_post(request, key):
         except Users.DoesNotExist:
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
-        image = request.GET.get('image')
-        model_1 = request.GET.get('model_1')
-        model_2 = request.GET.get('model_2')
-        model_3 = request.GET.get('model_3')
-        ensemble = request.GET.get('ensemble')
+        image = request.FILES.get('image')
+        if not image:
+            return HttpResponse('Файл изображения обязателен.', status=400)
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+        model_1 = request.POST.get('model_1')
+        model_2 = request.POST.get('model_2')
+        model_3 = request.POST.get('model_3')
+        ensemble = request.POST.get('ensemble')
 
-        if not all([user, image, model_1, model_2, model_3, ensemble]):
+        if not all([model_1, model_2, model_3, ensemble]):
             return HttpResponse('Отсутствуют обязательные параметры.', status=400)
 
         analyse = Analyse.objects.create(
             user_key=user,
             image=image,
+            datetime=formatted_datetime,
             model_1=model_1,
             model_2=model_2,
             model_3=model_3,
@@ -44,11 +50,12 @@ def cnn_result_post(request, key):
             "data": {
                 "id": analyse.id,
                 "user_key": user.key,
-                "image": analyse.image,
+                "image": analyse.image.url,
+                "date": analyse.datetime,
                 "model_1": analyse.model_1,
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
-                "ensemble": analyse.ensemble
+                "result": analyse.ensemble
             }
         })
 
@@ -70,7 +77,8 @@ def get_result(request, key):
         analyse_data = [
             {
                 "id": record.id,
-                "image": record.image,
+                "image": record.image.url,
+                "date": record.datetime,
                 "model_1": record.model_1,
                 "model_2": record.model_2,
                 "model_3": record.model_3,
@@ -92,8 +100,37 @@ def delete_row(request, key):
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
         row_id = request.GET.get("id")
-        Analyse.objects.filter(id=row_id, user_key=user).delete()
+        analyse = Analyse.objects.get(id=row_id, user_key=user)
+
+        if os.path.exists('python_picture_web' + str(analyse.image.url)):
+            os.remove('python_picture_web' + str(analyse.image.url))
+            analyse.delete()
+        else:
+            return HttpResponse("Picture not found", status=404)
+
         if Analyse.objects.filter(id=row_id, user_key=user):
+            return HttpResponse(False, status=200)
+        else:
+            return HttpResponse(True, status=200)
+
+    return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
+def delete_all(request, key):
+    if request.method == "GET":
+        try:
+            user = Users.objects.get(key=key)
+        except Users.DoesNotExist:
+            return HttpResponse('Пользователь с таким ключом не найден.', status=404)
+
+        analyses = Analyse.objects.filter(user_key=user)
+        for analyse in analyses:
+            if os.path.exists('python_picture_web' + str(analyse.image.url)):
+                os.remove('python_picture_web' + str(analyse.image.url))
+                analyse.delete()
+            else:
+                return HttpResponse("Picture not found", status=404)
+
+        if Analyse.objects.filter(user_key=user):
             return HttpResponse(False, status=200)
         else:
             return HttpResponse(True, status=200)
