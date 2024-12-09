@@ -13,6 +13,10 @@ module.exports = defineConfig({
       '^/cnn_table': {
         target: 'http://back:8000',
         changeOrigin: true,
+      },
+      '/main/media/images/(.*)': {
+        target: 'http://back:8000',
+        changeOrigin: true,
       }
     }
   }
