@@ -5,6 +5,7 @@ from users.models import Users
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
 import os
+import requests
 
 from rest_framework import status
 from rest_framework.decorators import api_view, renderer_classes
@@ -139,13 +140,31 @@ def delete_all(request, key):
 
 @api_view(['POST'])
 @renderer_classes([JSONRenderer])
-def classification_image(request: Request):
+def classification_image(request: Request, key):
     method_name = "classification_image"
     try:
         image = request.FILES['image']
         image_data = image.read()
         result = MainImageClassifierBySkinLesion().apply(image_data)
-        return Response(result)
+
+        individual_labels = [label for label, _ in result['individual_predictions']]
+        ensemble_label = result['ensemble_prediction'][0]
+
+        model_1 = individual_labels[0]
+        model_2 = individual_labels[1]
+        model_3 = individual_labels[2]
+        ensemble = ensemble_label
+
+        data = {
+            "model_1": model_1,
+            "model_2": model_2,
+            "model_3": model_3,
+            "ensemble": ensemble
+        }
+
+        files = {"image": (image.name, image_data, image.content_type)}
+        response = requests.post(f'http://back:8000/cnn_table/{key}/add', data=data, files=files)
+        return Response(response)
     except Exception as exc:
         response_status = status.HTTP_400_BAD_REQUEST
         exception = exc
