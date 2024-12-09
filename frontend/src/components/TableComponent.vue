@@ -102,7 +102,7 @@ export default {
   },
   methods: {
     axiosInstance,
-    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'addData']),
+    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'fetchData']),
 
     logout() {
       MessageBox.confirm(
@@ -141,10 +141,8 @@ export default {
           .then(() => {
             const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
             const itemToRemove = this.data[globalIndex];
-            +
-                this.removeData(itemToRemove.id).then(() => {
-                  this.$store.dispatch('table/fetchData');
-                });
+            // Используем removeData из mapActions
+            this.removeData(itemToRemove.id);
           })
           .catch(() => {
             console.log('Удаление отменено.');
@@ -162,14 +160,8 @@ export default {
       )
           .then(() => {
             console.log("Удаление подтверждено.");
-            this.removeAllData()
-                .then(() => {
-                  this.$store.commit('table/SET_TABLE_DATA', []);
-                })
-                .catch(error => {
-                  console.error('Ошибка в removeAllData:', error);
-                  this.$message.error('Ошибка при удалении всех данных.');
-                });
+            // Используем removeAllData из mapActions
+            this.removeAllData();
           })
           .catch(() => {
             this.$message.info('Удаление отменено.');
@@ -202,31 +194,23 @@ export default {
 
       console.log('Файл для предсказания:', selectedFile);
 
+      // Используем predictData из mapActions
       this.predictData(selectedFile)
-          .then(response => {
-
-            const predictions = response.data.individual_predictions.map(prediction => String(prediction[0]));
-            const ensemble = String(response.data.ensemble_prediction[0]);
-
-            this.addData(
-                {
-                  imageFile: selectedFile,
-                  model1: predictions[0],
-                  model2: predictions[1],
-                  model3: predictions[2],
-                  ensemble: ensemble,
-                })
-                .then(() => {
-                  this.$store.dispatch('table/fetchData');
-                })
+          .then(() => {
+            this.$message.success('Данные успешно отправлены и обработаны!');
+          })
+          .catch(error => {
+            console.error('Ошибка предсказания:', error);
+            this.$message.error('Ошибка при выполнении предсказания.');
           })
           .finally(() => {
             this.loading = false;
-          })
+          });
     },
   },
-}
+};
 </script>
+
 
 <style scoped>
 img {

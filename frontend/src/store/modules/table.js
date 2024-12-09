@@ -23,30 +23,16 @@ const actions = {
                 console.error('Ошибка при получении данных:', error);
             });
     },
-    addData({dispatch}, {imageFile, model1, model2, model3, ensemble}
-    ) {
-        const authToken = localStorage.getItem('authToken')
-        const formData = new FormData();
-        formData.append('image', imageFile);
-        formData.append('model_1', model1);
-        formData.append('model_2', model2);
-        formData.append('model_3', model3);
-        formData.append('ensemble', ensemble);
-        
-        return axiosInstance.post(`/cnn_table/${authToken}/add`, formData)
-        .then(() => {
-            dispatch('fetchData');
-        })
-        .catch((error) => {
-            console.error('Ошибка при записи в таблицу:', error);
-        });
-    },
     // eslint-disable-next-line no-unused-vars
-    predictData({ commit },selectedFile) {
+    predictData({dispatch, commit},selectedFile) {
+        const authToken = localStorage.getItem('authToken')
         const formData = new FormData();
         formData.append('image', selectedFile);
 
-        return axiosInstance.post('/back/classification-image', formData)
+        return axiosInstance.post(`/back/classification-image/${authToken}`, formData)
+            .then(() => {
+                dispatch('fetchData');
+            })
             .catch(error => {
                 console.error('Ошибка при загрузке изображения:', error);
             });
