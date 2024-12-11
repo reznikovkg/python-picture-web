@@ -24,9 +24,11 @@ const actions = {
             });
     },
     // eslint-disable-next-line no-unused-vars
-    predictData({dispatch, commit},selectedFile) {
+    predictData({dispatch, commit},selectedFile, patient, description) {
         const authToken = localStorage.getItem('authToken')
         const formData = new FormData();
+        formData.append('patient', patient);
+        formData.append('description', description);
         formData.append('image', selectedFile);
 
         return axiosInstance.post(`/back/classification-image/${authToken}`, formData)
