@@ -31,8 +31,10 @@ def cnn_result_post(request, key):
         model_2 = request.POST.get('model_2')
         model_3 = request.POST.get('model_3')
         ensemble = request.POST.get('ensemble')
+        patient = request.POST.get('patient')
+        description = request.POST.get('description')
 
-        if not all([model_1, model_2, model_3, ensemble]):
+        if not all([model_1, model_2, model_3, ensemble, patient, description]):
             return HttpResponse('Отсутствуют обязательные параметры.', status=400)
 
         analyse = Analyse.objects.create(
@@ -42,7 +44,9 @@ def cnn_result_post(request, key):
             model_1=model_1,
             model_2=model_2,
             model_3=model_3,
-            ensemble=ensemble
+            ensemble=ensemble,
+            patient=patient,
+            description=description
         )
 
         return JsonResponse({
@@ -56,7 +60,9 @@ def cnn_result_post(request, key):
                 "model_1": analyse.model_1,
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
-                "result": analyse.ensemble
+                "result": analyse.ensemble,
+                "patient": analyse.patient,
+                "description": analyse.description
             }
         })
 
@@ -83,7 +89,9 @@ def get_result(request, key):
                 "model_1": record.model_1,
                 "model_2": record.model_2,
                 "model_3": record.model_3,
-                "ensemble": record.ensemble
+                "ensemble": record.ensemble,
+                "patient": record.patient,
+                "description": record.description
             }
             for record in analyse_records
         ]
@@ -159,7 +167,9 @@ def classification_image(request: Request, key):
             "model_1": model_1,
             "model_2": model_2,
             "model_3": model_3,
-            "ensemble": ensemble
+            "ensemble": ensemble,
+            "patient": request.POST.get('patient'),
+            "description": request.POST.get('description')
         }
 
         files = {"image": (image.name, image_data, image.content_type)}
