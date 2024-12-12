@@ -85,7 +85,7 @@
 
           <div class="field">
             <span class="field-label">Диагноз:</span>
-            <span class="field-value">{{diagnosis}}</span>
+            <span class="field-value">{{getDiagnosisLabel(diagnosis)}}</span>
           </div>
         </div>
         <div slot="footer" class="el-dialog__footer">
@@ -302,6 +302,8 @@ export default {
       }
       this.loading = true;
 
+      this.loading = true;
+
       this.predictData({
         selectedFile: this.uploadedFiles[0],
         patient: this.formData.patient,
@@ -375,6 +377,10 @@ export default {
           console.error('Ошибка при обновлении записи:', error);
           this.$message.error('Ошибка при обновлении записи.');
         });
+    },
+    getDiagnosisLabel(value) {
+      const option = this.diagnosisOptions.find(option => option.value === value);
+      return option ? option.label : value;
     },
     isResultMatch(row) {
       return row.ensemble === row.diagnosis;
