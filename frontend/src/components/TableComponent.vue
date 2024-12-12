@@ -223,6 +223,19 @@ export default {
     handleFileAdded(file) {
       console.log('Файл добавлен:', file);
       this.uploadedFiles = [file];
+
+      const dropzoneElement = this.$refs.myDropzone.$el;
+      const messageElement = dropzoneElement.querySelector('.dz-message');
+      if (messageElement) {
+        messageElement.style.display = 'none';
+      }
+
+      setTimeout(() => {
+        const successMarks = document.querySelectorAll('.dz-success-mark');
+        const errorMarks = document.querySelectorAll('.dz-error-mark');
+        successMarks.forEach(mark => mark.remove());
+        errorMarks.forEach(mark => mark.remove());
+      }, 0);
     },
     handleSubmit() {
       console.log('Данные, полученные из формы:');
@@ -239,6 +252,7 @@ export default {
         this.$message.error('Пожалуйста, заполните все поля.');
         return;
       }
+      this.loading = true;
 
       this.predictData({
         selectedFile: this.uploadedFiles[0],
@@ -263,18 +277,14 @@ export default {
     closeDownloadModal() {
       this.isDownloadModalVisible = false;
       this.uploadedFiles = [];
+      this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
-    openModal(row, data) {
+    openModal(row) {
       this.isModalVisible = true;
       this.modalTitle = row.image;
       this.patientName = row.patient;
-      let index;
-      for (index = 0; index < data.length; index++) {
-        if (data[index].date === row.date){
-          this.description = data[index].description;
-        }
-      }
+      this.description = row.description;
     },
     closeModal() {
       this.isModalVisible = false;
