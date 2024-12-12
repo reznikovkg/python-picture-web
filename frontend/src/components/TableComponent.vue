@@ -2,24 +2,15 @@
   <div class="animated_container" v-loading="loading">
     <div class="animated_container__table-container">
       <div class="table-container__controls">
-        <ElButton type="primary" @click="() => openDownloadModal()">Добавить</ElButton>
+        <ElButton type="primary" @click="() => openLoad()">Добавить</ElButton>
         <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
         <ElButton type="danger" @click="() => logout()">Выход</ElButton>
-        <!--        <ElUpload-->
-        <!--            ref="upload"-->
-        <!--            class="upload-demo"-->
-        <!--            action=""-->
-        <!--            :on-change="(file) => handleImageChange(file)"-->
-        <!--            :auto-upload="false"-->
-        <!--            :show-file-list="false">-->
-        <!--        </ElUpload>-->
         <ElDialog
             :visible.sync="isDownloadModalVisible"
             title="Добавить данные"
-            width="40%"
+            width="30%"
             @close="closeDownloadModal"
-            class="table-container__controls-window--download">
-          <p>Загруженные файлы: {{ uploadedFiles }}</p>
+            class="controls-container__modal-window">
           <ElForm>
             <ElFormItem label="Пациент">
               <ElInput v-model="formData.patient" placeholder="Введите фио пациента"></ElInput>
@@ -27,25 +18,25 @@
             <ElFormItem label="Описание">
               <ElInput v-model="formData.description" type="textarea" placeholder="Введите описание"></ElInput>
             </ElFormItem>
-            <ElFormItem label="Загрузка изображения">
+            <ElFormItem>
               <vue-dropzone
                   ref="myDropzone"
                   id="dropzone"
                   :options="dropzoneOptions"
                   @vdropzone-file-added="handleFileAdded"
-                  class="dropzone"
-              ></vue-dropzone>
+                  class="controls-container__modal-window--dropzone">
+              </vue-dropzone>
             </ElFormItem>
           </ElForm>
-          <span slot="footer" class="dialog-footer">
+          <span slot="footer" class="controls-container__dialog-footer">
           <ElButton @click="closeDownloadModal">Отмена</ElButton>
           <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
         </span>
         </ElDialog>
       </div>
 
-      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
-        <ElTableColumn label="Пациент" :formatter="(row) => formatModelsAndResult(row)"/>
+      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row, paginatedData)">
+        <ElTableColumn label="Пациент" prop="patient"/>
         <ElTableColumn label="Изображение" prop="image"/>
         <ElTableColumn label="Дата и время загрузки" prop="date"/>
         <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)"
@@ -80,12 +71,12 @@
         <div class="modal-fields">
           <div class="field">
             <span class="field-label">Пациент:</span>
-            <span class="field-value">{{ patientName }}</span>
+            <span class="field-value">{{patientName}}</span>
           </div>
 
           <div class="field">
             <span class="field-label">Описание:</span>
-            <span class="field-value">{{ description }}</span>
+            <span class="field-value">{{description}}</span>
           </div>
         </div>
         <div slot="footer" class="el-dialog__footer">
@@ -129,25 +120,25 @@ export default {
   data() {
     return {
       currentPage: 1,
-      itemsPerPage: 5,
-      loading: false,
-      patientName: "Иван Иванов",
-      description: "Пациент поступил на обследование с подозрением на кожное заболевание.",
-      isModalVisible: false,
-      modalTitle: '',
-      isDownloadModalVisible: false,
-      formData: {
-        patient: '',
-        description: '',
-      },
+      description: '',
       dropzoneOptions: {
         url: '/upload',
         autoProcessQueue: false,
         addRemoveLinks: false,
         maxFiles: 1,
         acceptedFiles: '.jpg, .jpeg',
-        dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора.'
+        dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора'
       },
+      formData: {
+        patient: '',
+        description: '',
+      },
+      isDownloadModalVisible: false,
+      isModalVisible: false,
+      itemsPerPage: 5,
+      loading: false,
+      modalTitle: '',
+      patientName: '',
       uploadedFiles: [],
     };
   },
@@ -226,15 +217,7 @@ export default {
             this.$message.info('Удаление отменено.');
           });
     },
-    loadMore() {
-      const inputElement = this.$refs.upload.$el.querySelector('input');
-      if (inputElement) {
-        inputElement.click();
-      } else {
-        console.error('Не удалось найти input внутри el-upload');
-      }
-    },
-    openDownloadModal() {
+    openLoad() {
       this.isDownloadModalVisible = true;
     },
     handleFileAdded(file) {
@@ -242,6 +225,11 @@ export default {
       this.uploadedFiles = [file];
     },
     handleSubmit() {
+      console.log('Данные, полученные из формы:');
+      console.log('Файл:', this.uploadedFiles[0]);
+      console.log('Пациент:', this.formData.patient);
+      console.log('Описание:', this.formData.description);
+
       if (this.uploadedFiles.length === 0) {
         this.$message.error('Пожалуйста, загрузите изображение.');
         return;
@@ -252,47 +240,10 @@ export default {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('patient', this.formData.patient);
-      formData.append('description', this.formData.description);
-      formData.append('image', this.uploadedFiles[0]);
-
-      axiosInstance.post('http://localhost:8000/back/classification-image/6281', formData)
-          .then((response) => {
-            this.$message.success('Данные успешно отправлены!');
-            console.log('Ответ сервера:', response.data);
-            this.closeDownloadModal();
-          })
-          .catch((error) => {
-            this.$message.error('Ошибка при отправке данных.');
-            console.error('Ошибка:', error);
-          });
-    },
-    closeDownloadModal() {
-      this.isDownloadModalVisible = false;
-      this.uploadedFiles = [];
-      this.$refs.myDropzone.removeAllFiles();
-    },
-    openModal(row) {
-      this.isModalVisible = true;
-      this.modalTitle = row.image
-    },
-    closeModal() {
-      this.isModalVisible = false;
-    },
-    handleImageChange(file) {
-      let selectedFile = file.raw;
-
-      if (!selectedFile) {
-        this.$message.error('Пожалуйста, выберите изображение.');
-        return;
-      }
-
-      this.loading = true;
-
-      console.log('Файл для предсказания:', selectedFile);
-
-      this.predictData(selectedFile)
+      this.predictData({
+        selectedFile: this.uploadedFiles[0],
+        patient: this.formData.patient,
+        description: this.formData.description})
           .then(() => {
             this.$message.success('Данные успешно отправлены и обработаны!');
           })
@@ -303,6 +254,30 @@ export default {
           .finally(() => {
             this.loading = false;
           });
+
+      this.isDownloadModalVisible = false;
+      this.uploadedFiles = [];
+      this.formData = [];
+      this.$refs.myDropzone.removeAllFiles();
+    },
+    closeDownloadModal() {
+      this.isDownloadModalVisible = false;
+      this.uploadedFiles = [];
+      this.$refs.myDropzone.removeAllFiles();
+    },
+    openModal(row, data) {
+      this.isModalVisible = true;
+      this.modalTitle = row.image;
+      this.patientName = row.patient;
+      let index;
+      for (index = 0; index < data.length; index++) {
+        if (data[index].date === row.date){
+          this.description = data[index].description;
+        }
+      }
+    },
+    closeModal() {
+      this.isModalVisible = false;
     },
   },
 };
@@ -329,32 +304,17 @@ export default {
     }
   }
 }
-.dropzone {
-  background-color: rgba(128, 128, 128, 0.8);
-  border: 2px dashed #ccc;
+
+.controls-container__modal-window--dropzone {
+  background-color: rgba(192, 192, 192, 0.7);
+  border: #ccc;
   border-radius: 10px;
   padding: 20px;
   text-align: center;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: rgba(128, 128, 128, 1);
-  }
-
-  .dz-remove {
-    background-color: #ff4d4f;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 5px;
-    text-decoration: none;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-
-    &:hover {
-      background-color: #d9363e;
-    }
+    background-color: rgba(192, 192, 192, 1);
   }
 }
 

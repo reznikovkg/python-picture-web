@@ -24,7 +24,7 @@ const actions = {
             });
     },
     // eslint-disable-next-line no-unused-vars
-    predictData({dispatch, commit},selectedFile, patient, description) {
+    predictData({dispatch, commit}, {selectedFile, patient, description}) {
         const authToken = localStorage.getItem('authToken')
         const formData = new FormData();
         formData.append('patient', patient);
