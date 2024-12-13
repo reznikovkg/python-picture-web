@@ -272,12 +272,6 @@ export default {
       console.log('Файл добавлен:', file);
       this.uploadedFiles = [file];
 
-      const dropzoneElement = this.$refs.myDropzone.$el;
-      const messageElement = dropzoneElement.querySelector('.dz-message');
-      if (messageElement) {
-        messageElement.style.display = 'none';
-      }
-
       setTimeout(() => {
         const successMarks = document.querySelectorAll('.dz-success-mark');
         const errorMarks = document.querySelectorAll('.dz-error-mark');
