@@ -253,7 +253,7 @@ def classification_image(request: Request, key):
         }
 
         files = {"image": (image.name, image_data, image.content_type)}
-        response = requests.post(f'http://localhost:8000/cnn_table/{key}/add', data=data, files=files)
+        response = requests.post(f'http://back:8000/cnn_table/{key}/add', data=data, files=files)
         return Response(response)
     except Exception as exc:
         response_status = status.HTTP_400_BAD_REQUEST
@@ -271,25 +271,35 @@ def classification_images(request: Request, key):
             result = MainImageClassifierBySkinLesion().apply(image_data)
 
             individual_labels = [label for label, _ in result['individual_predictions']]
+            individual_probability = [max(probability) for _, probability in result['individual_predictions']]
             ensemble_label = result['ensemble_prediction'][0]
 
             model_1 = individual_labels[0]
             model_2 = individual_labels[1]
             model_3 = individual_labels[2]
             ensemble = ensemble_label
+            
+            model_1_probability = individual_probability[0]
+            model_2_probability = individual_probability[1]
+            model_3_probability = individual_probability[2]
+            ensemble_probability = max(result['ensemble_prediction'][1])
 
             data = {
                 "model_1": model_1,
                 "model_2": model_2,
                 "model_3": model_3,
                 "ensemble": ensemble,
+                "model_1_probability": model_1_probability,
+                "model_2_probability": model_2_probability,
+                "model_3_probability": model_3_probability,
+                "ensemble_probability": ensemble_probability,
                 "patient": request.POST.get('patient'),
                 "description": request.POST.get('description')
             }
 
             files = {"image": (image.name, image_data, image.content_type)}
             responses = []
-            responses.append(requests.post(f'http://localhost:8000/cnn_table/{key}/add', data=data, files=files))
+            responses.append(requests.post(f'http://back:8000/cnn_table/{key}/add', data=data, files=files))
         return Response({"responses": responses}, status=status.HTTP_200_OK)
     except Exception as exc:
         response_status = status.HTTP_400_BAD_REQUEST

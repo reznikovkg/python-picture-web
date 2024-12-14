@@ -344,6 +344,15 @@ export default {
         }
       }
 
+      if (this.uploadedFiles.length === 1) {
+        const dropzoneElement = this.$refs.myDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = '';
+        }
+      }
+
+
       setTimeout(() => {
         const successMarks = document.querySelectorAll('.dz-success-mark');
         const errorMarks = document.querySelectorAll('.dz-error-mark');
@@ -381,6 +390,13 @@ export default {
 
 
       this.isDownloadImagesModalVisible = false;
+      if (this.uploadedFiles.length > 1) {
+        const dropzoneElement = this.$refs.myDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Перетащите файлы сюда или нажмите для выбора';
+        }
+      }
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
@@ -420,6 +436,13 @@ export default {
           });
 
       this.isDownloadModalVisible = false;
+      if (this.uploadedFiles.length === 1) {
+        const dropzoneElement = this.$refs.myDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
+        }
+      }
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
