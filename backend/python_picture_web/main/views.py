@@ -92,15 +92,19 @@ def cnn_results_post(request, key):
         if not image:
             return HttpResponse('Файл изображения обязателен.', status=400)
         current_datetime = datetime.now()
-        formatted_datetime = current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+        formatted_datetime = current_datetime.strftime("%d.%m.%Y в %H:%M")
         model_1 = request.POST.get('model_1')
         model_2 = request.POST.get('model_2')
         model_3 = request.POST.get('model_3')
         ensemble = request.POST.get('ensemble')
+        model_1_probability = request.POST.get('model_1_probability')
+        model_2_probability = request.POST.get('model_2_probability')
+        model_3_probability = request.POST.get('model_3_probability')
+        ensemble_probability = request.POST.get('ensemble_probability')
         patient = request.POST.get('patient')
         description = request.POST.get('description')
 
-        if not all([model_1, model_2, model_3, ensemble, patient, description]):
+        if not all([model_1, model_2, model_3, ensemble, model_1_probability, model_2_probability, model_3_probability, ensemble_probability, patient, description]):
             return HttpResponse('Отсутствуют обязательные параметры.', status=400)
 
         analyse = Analyse.objects.create(
@@ -110,6 +114,10 @@ def cnn_results_post(request, key):
             model_1=model_1,
             model_2=model_2,
             model_3=model_3,
+            model_1_probability=model_1_probability,
+            model_2_probability=model_2_probability,
+            model_3_probability=model_3_probability,
+            ensemble_probability=ensemble_probability,
             ensemble=ensemble,
             patient=patient,
             description=description
@@ -127,6 +135,10 @@ def cnn_results_post(request, key):
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
                 "result": analyse.ensemble,
+                "model_1_probability": record.model_1_probability,
+                "model_2_probability": record.model_2_probability,
+                "model_3_probability": record.model_3_probability,
+                "ensemble_probability": record.ensemble_probability,
                 "patient": analyse.patient,
                 "description": analyse.description,
                 "diagnosis": analyse.diagnosis
@@ -282,6 +294,11 @@ def classification_images(request: Request, key):
             model_1_probability = individual_probability[0]
             model_2_probability = individual_probability[1]
             model_3_probability = individual_probability[2]
+            ensemble_probability = max(result['ensemble_prediction'][1])
+
+            model_1_probability =individual_probability[0]
+            model_2_probability =individual_probability[1]
+            model_3_probability =individual_probability[2]
             ensemble_probability = max(result['ensemble_prediction'][1])
 
             data = {
