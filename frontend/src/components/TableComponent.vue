@@ -3,6 +3,7 @@
     <div class="table-container">
       <div class="table-container__controls">
         <ElButton type="primary" @click="() => openLoad()">Добавить</ElButton>
+        <ElButton type="primary" @click="() => openMoreLoad()">Массовая загрузка</ElButton>
         <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
         <ElButton type="danger" @click="() => logout()">Выход</ElButton>
         <ElDialog
@@ -22,7 +23,7 @@
               <vue-dropzone
                   ref="myDropzone"
                   id="dropzone"
-                  :options="dropzoneOptions"
+                  :options="dropzoneImageOptions"
                   @vdropzone-file-added="handleFileAdded"
                   class="controls-container__modal-window--dropzone">
               </vue-dropzone>
@@ -31,6 +32,28 @@
           <span slot="footer" class="controls-container__dialog-footer">
           <ElButton @click="closeDownloadModal">Отмена</ElButton>
           <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
+        </span>
+        </ElDialog>
+        <ElDialog
+            :visible.sync="isDownloadImagesModalVisible"
+            title="Добавить данные"
+            width="30%"
+            @close="closeDownloadModal"
+            class="controls-container__modal-window">
+          <ElForm>
+            <ElFormItem>
+              <vue-dropzone
+                  ref="myDropzone"
+                  id="dropzone"
+                  :options="dropzoneImagesOptions"
+                  @vdropzone-file-added="handleFileAdded"
+                  class="controls-container__modal-window--dropzone">
+              </vue-dropzone>
+            </ElFormItem>
+          </ElForm>
+          <span slot="footer" class="controls-container__dialog-footer">
+          <ElButton @click="closeDownloadModal">Отмена</ElButton>
+          <ElButton type="primary" @click="handleSubmits">Сохранить</ElButton>
         </span>
         </ElDialog>
       </div>
@@ -75,17 +98,17 @@
         <div class="modal-fields">
           <div class="field">
             <span class="field-label">Пациент:</span>
-            <span class="field-value">{{patientName}}</span>
+            <span class="field-value">{{ patientName }}</span>
           </div>
 
           <div class="field">
             <span class="field-label">Описание:</span>
-            <span class="field-value">{{description}}</span>
+            <span class="field-value">{{ description }}</span>
           </div>
 
           <div class="field">
             <span class="field-label">Диагноз:</span>
-            <span class="field-value">{{getDiagnosisLabel(diagnosis)}}</span>
+            <span class="field-value">{{ getDiagnosisLabel(diagnosis) }}</span>
           </div>
         </div>
         <div slot="footer" class="el-dialog__footer">
@@ -105,7 +128,8 @@
           </ElFormItem>
           <ElFormItem label="Диагноз">
             <ElSelect v-model="editForm.diagnosis" placeholder="Выберите диагноз">
-              <ElOption v-for="option in diagnosisOptions" :key="option.value" :label="option.label" :value="option.value"/>
+              <ElOption v-for="option in diagnosisOptions" :key="option.value" :label="option.label"
+                        :value="option.value"/>
               <ElOption label="Другое" value="other"/>
             </ElSelect>
           </ElFormItem>
@@ -153,7 +177,7 @@ export default {
     return {
       currentPage: 1,
       description: '',
-      dropzoneOptions: {
+      dropzoneImageOptions: {
         url: '/upload',
         autoProcessQueue: false,
         addRemoveLinks: false,
@@ -161,11 +185,21 @@ export default {
         acceptedFiles: '.jpg, .jpeg',
         dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора'
       },
+      dropzoneImagesOptions: {
+        url: '/upload',
+        autoProcessQueue: false,
+        addRemoveLinks: false,
+        previewsContainer: false,
+        maxFiles: 500,
+        acceptedFiles: '.jpg, .jpeg',
+        dictDefaultMessage: 'Перетащите файлы сюда или нажмите для выбора'
+      },
       formData: {
         patient: '',
         description: '',
       },
       isDownloadModalVisible: false,
+      isDownloadImagesModalVisible: false,
       isModalVisible: false,
       itemsPerPage: 5,
       loading: false,
@@ -179,14 +213,14 @@ export default {
         diagnosis: '',
       },
       diagnosisOptions: [
-        { label: 'Актинический кератоз (AK)', value: 'AK' },
-        { label: 'Базальноклеточная карцинома (BCC)', value: 'BCC' },
-        { label: 'Доброкачественный кератоз (BKL)', value: 'BKL' },
-        { label: 'Дерматофиброма (DF)', value: 'DF' },
-        { label: 'Меланома (MEL)', value: 'MEL' },
-        { label: 'Меланоцитарный невус (NV)', value: 'NV' },
-        { label: 'Плоскоклеточный рак (SCC)', value: 'SCC' },
-        { label: 'Сосудистое поражение (VASC)', value: 'VASC' },
+        {label: 'Актинический кератоз (AK)', value: 'AK'},
+        {label: 'Базальноклеточная карцинома (BCC)', value: 'BCC'},
+        {label: 'Доброкачественный кератоз (BKL)', value: 'BKL'},
+        {label: 'Дерматофиброма (DF)', value: 'DF'},
+        {label: 'Меланома (MEL)', value: 'MEL'},
+        {label: 'Меланоцитарный невус (NV)', value: 'NV'},
+        {label: 'Плоскоклеточный рак (SCC)', value: 'SCC'},
+        {label: 'Сосудистое поражение (VASC)', value: 'VASC'},
       ],
     };
   },
@@ -202,7 +236,7 @@ export default {
   },
   methods: {
     axiosInstance,
-    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'fetchData', 'updateRecord']),
+    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'predictListData', 'fetchData', 'updateRecord']),
 
     logout() {
       MessageBox.confirm(
@@ -268,14 +302,20 @@ export default {
     openLoad() {
       this.isDownloadModalVisible = true;
     },
-    handleFileAdded(file) {
+    openMoreLoad() {
+      this.isDownloadImagesModalVisible = true;
+    },
+    handleFileAdded: function (file) {
       console.log('Файл добавлен:', file);
-      this.uploadedFiles = [file];
 
-      const dropzoneElement = this.$refs.myDropzone.$el;
-      const messageElement = dropzoneElement.querySelector('.dz-message');
-      if (messageElement) {
-        messageElement.style.display = 'none';
+      this.uploadedFiles.push(file);
+
+      if (this.uploadedFiles.length > 1) {
+        const dropzoneElement = this.$refs.myDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = `Количество загруженных файлов: ${this.uploadedFiles.length}`;
+        }
       }
 
       setTimeout(() => {
@@ -284,6 +324,40 @@ export default {
         successMarks.forEach(mark => mark.remove());
         errorMarks.forEach(mark => mark.remove());
       }, 0);
+    },
+    handleSubmits() {
+      if (this.uploadedFiles.length === 0) {
+        this.$message.error('Пожалуйста, загрузите изображения.');
+        return;
+      }
+
+      if (!this.formData.patient || !this.formData.description) {
+        this.formData.patient = '-';
+        this.formData.description = '-';
+      }
+
+      this.loading = true;
+
+      this.predictListData({
+        selectedFiles: this.uploadedFiles,
+        patient: this.formData.patient,
+        description: this.formData.description
+      }).then(() => {
+        this.$message.success('Данные успешно отправлены и обработаны!');
+      })
+          .catch(error => {
+            console.error('Ошибка предсказания:', error);
+            this.$message.error('Ошибка при выполнении предсказания.');
+          })
+          .finally(() => {
+            this.loading = false;
+          });
+
+
+      this.isDownloadImagesModalVisible = false;
+      this.uploadedFiles = [];
+      this.formData = [];
+      this.$refs.myDropzone.removeAllFiles();
     },
     handleSubmit() {
       console.log('Данные, полученные из формы:');
@@ -306,7 +380,8 @@ export default {
       this.predictData({
         selectedFile: this.uploadedFiles[0],
         patient: this.formData.patient,
-        description: this.formData.description})
+        description: this.formData.description
+      })
           .then(() => {
             this.$message.success('Данные успешно отправлены и обработаны!');
           })
@@ -325,6 +400,7 @@ export default {
     },
     closeDownloadModal() {
       this.isDownloadModalVisible = false;
+      this.isDownloadImagesModalVisible = false;
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
@@ -358,23 +434,23 @@ export default {
       }
 
       this.updateRecord(this.editForm)
-        .then(() => {
-          this.$message.success('Запись успешно обновлена!');
+          .then(() => {
+            this.$message.success('Запись успешно обновлена!');
 
-          this.description = this.editForm.description;
-          this.diagnosis = this.editForm.diagnosis;
+            this.description = this.editForm.description;
+            this.diagnosis = this.editForm.diagnosis;
 
-          if (this.selectedRow && this.selectedRow.id === this.editForm.id) {
-            this.selectedRow.description = this.editForm.description;
-            this.selectedRow.diagnosis = this.editForm.diagnosis;
-          }
+            if (this.selectedRow && this.selectedRow.id === this.editForm.id) {
+              this.selectedRow.description = this.editForm.description;
+              this.selectedRow.diagnosis = this.editForm.diagnosis;
+            }
 
-          this.closeEditModal();
-        })
-        .catch((error) => {
-          console.error('Ошибка при обновлении записи:', error);
-          this.$message.error('Ошибка при обновлении записи.');
-        });
+            this.closeEditModal();
+          })
+          .catch((error) => {
+            console.error('Ошибка при обновлении записи:', error);
+            this.$message.error('Ошибка при обновлении записи.');
+          });
     },
     getDiagnosisLabel(value) {
       const option = this.diagnosisOptions.find(option => option.value === value);
