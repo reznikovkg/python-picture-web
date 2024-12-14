@@ -69,8 +69,59 @@ def cnn_result_post(request, key):
         })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+def cnn_results_post(request, key):
+    if request.method == 'POST':
+        try:
+            user = Users.objects.get(key=key)
+        except Users.DoesNotExist:
+            return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
+        image = request.FILES.get('image')
+        if not image:
+            return HttpResponse('Файл изображения обязателен.', status=400)
+        current_datetime = datetime.now()
+        formatted_datetime = current_datetime.strftime("%d-%m-%Y %H:%M:%S")
+        model_1 = request.POST.get('model_1')
+        model_2 = request.POST.get('model_2')
+        model_3 = request.POST.get('model_3')
+        ensemble = request.POST.get('ensemble')
+        patient = request.POST.get('patient')
+        description = request.POST.get('description')
 
+        if not all([model_1, model_2, model_3, ensemble, patient, description]):
+            return HttpResponse('Отсутствуют обязательные параметры.', status=400)
+
+        analyse = Analyse.objects.create(
+            user_key=user,
+            image=image,
+            datetime=formatted_datetime,
+            model_1=model_1,
+            model_2=model_2,
+            model_3=model_3,
+            ensemble=ensemble,
+            patient=patient,
+            description=description
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Запись успешно создана.",
+            "data": {
+                "id": analyse.id,
+                "user_key": user.key,
+                "image": analyse.image.url,
+                "date": analyse.datetime,
+                "model_1": analyse.model_1,
+                "model_2": analyse.model_2,
+                "model_3": analyse.model_3,
+                "result": analyse.ensemble,
+                "patient": analyse.patient,
+                "description": analyse.description,
+                "diagnosis": analyse.diagnosis
+            }
+        })
+
+    return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
 def get_result(request, key):
     if request.method == "GET":
         try:
@@ -176,13 +227,48 @@ def classification_image(request: Request, key):
         }
 
         files = {"image": (image.name, image_data, image.content_type)}
-        response = requests.post(f'http://back:8000/cnn_table/{key}/add', data=data, files=files)
+        response = requests.post(f'http://localhost:8000/cnn_table/{key}/add', data=data, files=files)
         return Response(response)
     except Exception as exc:
         response_status = status.HTTP_400_BAD_REQUEST
         exception = exc
         return Response({'error': str(exception)}, status=response_status)
 
+@api_view(['POST'])
+@renderer_classes([JSONRenderer])
+def classification_images(request: Request, key):
+    method_name = "classification_images"
+    try:
+        images = request.FILES.getlist('images')
+        for image in images:
+            image_data = image.read()
+            result = MainImageClassifierBySkinLesion().apply(image_data)
+
+            individual_labels = [label for label, _ in result['individual_predictions']]
+            ensemble_label = result['ensemble_prediction'][0]
+
+            model_1 = individual_labels[0]
+            model_2 = individual_labels[1]
+            model_3 = individual_labels[2]
+            ensemble = ensemble_label
+
+            data = {
+                "model_1": model_1,
+                "model_2": model_2,
+                "model_3": model_3,
+                "ensemble": ensemble,
+                "patient": request.POST.get('patient'),
+                "description": request.POST.get('description')
+            }
+
+            files = {"image": (image.name, image_data, image.content_type)}
+            responses = []
+            responses.append(requests.post(f'http://localhost:8000/cnn_table/{key}/add', data=data, files=files))
+        return Response({"responses": responses}, status=status.HTTP_200_OK)
+    except Exception as exc:
+        response_status = status.HTTP_400_BAD_REQUEST
+        exception = exc
+        return Response({'error': str(exception)}, status=response_status)
 
 @csrf_exempt
 def update_analyse(request, key):
