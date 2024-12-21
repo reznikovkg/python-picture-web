@@ -121,20 +121,21 @@
         </div>
         <div class="modal-fields">
           <div class="field">
-            <span class="field-label">Пациент:</span>
+            <span class="field-label">Пациент: </span>
             <span class="field-value">{{ patientName }}</span>
           </div>
           <div class="field">
-            <span class="field-label">Описание:</span>
+            <span class="field-label">Описание: </span>
             <span class="field-value">{{ description }}</span>
           </div>
           <div class="field">
-            <span class="field-label">Диагноз:</span>
+            <span class="field-label">Диагноз: </span>
             <span class="field-value">{{ getDiagnosisLabel(diagnosis) }}</span>
           </div>
         </div>
         <div class="el-dialog__footer" slot="footer">
           <ElButton @click="() => openEditModal()">Редактировать</ElButton>
+          <ElButton @click="() => openRecordModal()">Записи</ElButton>
           <ElButton @click="() => closeModal()">Закрыть</ElButton>
         </div>
       </ElDialog>
@@ -165,6 +166,67 @@
         </span>
       </ElDialog>
     </div>
+    <ElDialog
+        :visible.sync="isEditModalVisible"
+        title="Редактирование записи"
+        width="40%"
+        @close="() => closeEditModal()"
+        class="table-container__edit-modal">
+      <ElForm>
+        <ElFormItem label="Описание">
+          <ElInput v-model="editForm.description" type="textarea" placeholder="Введите новое описание"></ElInput>
+        </ElFormItem>
+        <ElFormItem label="Диагноз">
+          <ElSelect v-model="editForm.diagnosis" placeholder="Выберите диагноз">
+            <ElOption v-for="option in diagnosisOptions" :key="option.value" :label="option.label"
+                      :value="option.value"/>
+            <ElOption label="Другое" value="other"/>
+          </ElSelect>
+        </ElFormItem>
+      </ElForm>
+      <span slot="footer" class="dialog-footer">
+          <ElButton @click="() => closeEditModal()">Отмена</ElButton>
+          <ElButton type="primary" @click="() => submitEdit()">Сохранить</ElButton>
+        </span>
+    </ElDialog>
+    <ElDialog
+        :visible.sync="isRecordModalVisible"
+        @close="() => closeRecordModal()"
+        title="Записи"
+        width="40%"
+        class="table-container__modal-window--record">
+      <div>
+        <div v-if="!isRecording && recordings.length === 0">
+          <p>Записей нет.</p>
+          <ElButton type="primary" @click="() => startRecording()">Добавить</ElButton>
+        </div>
+        <div v-else-if="isRecording">
+          <p>Идёт запись...</p>
+          <ElButton type="success" @click="() => saveRecording()">Сохранить</ElButton>
+          <ElButton type="danger" @click="() => cancelRecording()">Отмена</ElButton>
+        </div>
+        <div v-else>
+          <p v-if="recordings.length > 0">Сохранённые записи:</p>
+          <ul>
+            <li
+                v-for="(record, index) in recordings"
+                :key="index"
+                class="table-container__modal-window--record--element">
+              <audio :src="record" controls/>
+            </li>
+          </ul>
+          <ElButton type="primary" @click="() => startRecording()">Добавить новую запись</ElButton>
+        </div>
+      </div>
+      <span slot="footer" class="table-container__dialog-footer">
+    <ElButton
+        :disabled="recordings.length === 0"
+        @click="() => deleteAllRecordings()"
+        type="danger">
+      Удалить все
+    </ElButton>
+  </span>
+    </ElDialog>
     <div class="animated-container__pagination-container">
       <div class="pagination-container__pagination">
         <ElPagination
@@ -245,6 +307,11 @@ export default {
         {label: 'Плоскоклеточный рак (SCC)', value: 'SCC'},
         {label: 'Сосудистое поражение (VASC)', value: 'VASC'},
       ],
+      isRecordModalVisible: false,
+      isRecording: false,
+      mediaRecorder: null,
+      audioChunks: [],
+      recordings: [],
     };
   },
   computed: {
@@ -259,7 +326,9 @@ export default {
   },
   methods: {
     axiosInstance,
-    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'predictListData', 'fetchData', 'updateRecord']),
+    ...mapActions('table',
+        ['removeData', 'removeAllData', 'predictData', 'predictListData',
+          'fetchData', 'updateRecord', 'saveAudio', 'removeAllRecords']),
 
     logout() {
       MessageBox.confirm(
@@ -480,6 +549,109 @@ export default {
     isResultMatch(row) {
       return row.ensemble === row.diagnosis;
     },
+    openRecordModal() {
+      this.closeModal();
+      if (!this.selectedRow || !this.selectedRow.recordings) {
+        this.selectedRow.recordings = [];
+      }
+      this.recordings = this.selectedRow.recordings.map(record => record.audio_file_url);
+      this.isRecordModalVisible = true;
+    },
+    closeRecordModal() {
+      this.cancelRecording();
+      this.isRecordModalVisible = false;
+      this.isModalVisible = true;
+    },
+    async startRecording() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this.mediaRecorder = new MediaRecorder(stream);
+        this.audioChunks = [];
+        this.isRecording = true;
+
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
+
+        this.mediaRecorder.start();
+        console.log("Запись началась.");
+      } catch (error) {
+        console.error("Ошибка доступа к микрофону:", error);
+        this.$message.error('Ошибка доступа к микрофону.');
+      }
+    },
+    saveRecording() {
+      if (this.mediaRecorder) {
+        this.mediaRecorder.onstop = async () => {
+          if (this.audioChunks.length === 0) {
+            console.error("Нет данных для сохранения записи.");
+            this.$message.error("Ошибка записи: нет данных.");
+            this.isRecording = false;
+            return;
+          }
+          const audioBlob = new Blob(this.audioChunks, { type: 'audio/wav' });
+          if (audioBlob.size > 0) {
+            try {
+              await this.saveAudio({
+                analyseId: this.selectedRow.id,
+                audioBlob,
+              });
+              await this.fetchData();
+              const updatedRow = this.data.find((row) => row.id === this.selectedRow.id);
+              if (updatedRow) {
+                this.selectedRow = updatedRow;
+              }
+              this.recordings.push(URL.createObjectURL(audioBlob));
+              this.$message.success('Запись успешно сохранена на сервере!');
+            } catch (error) {
+              console.error("Ошибка отправки на сервер:", error);
+              this.$message.error('Ошибка при сохранении записи.');
+            } finally {
+              this.isRecording = false;
+            }
+          } else {
+            console.error("Пустой файл записи.");
+            this.$message.error("Запись не содержит данных.");
+            this.isRecording = false;
+          }
+        };
+        this.mediaRecorder.stop();
+      }
+    },
+    cancelRecording() {
+      if (this.mediaRecorder && this.isRecording) {
+        this.mediaRecorder.stop();
+        this.isRecording = false;
+        this.audioChunks = [];
+        this.$message.info('Запись отменена.');
+      }
+    },
+    deleteAllRecordings() {
+      MessageBox.confirm(
+          'Вы уверены, что хотите удалить все записи?',
+          'Подтверждение удаления',
+          {
+            confirmButtonText: 'Да',
+            cancelButtonText: 'Нет',
+            type: 'warning',
+          }
+      )
+          .then(() => {
+            console.log("Удаление подтверждено.");
+            this.removeAllRecords(this.selectedRow.id);
+            this.fetchData();
+            this.recordings = [];
+            const updatedRow = this.data.find((row) => row.id === this.selectedRow.id);
+            if (updatedRow) {
+              this.selectedRow = updatedRow;
+            }
+          })
+          .catch(() => {
+            this.$message.info('Удаление отменено.');
+          });
+    },
   },
 };
 </script>
@@ -600,7 +772,12 @@ img {
       box-sizing: border-box;
       overflow: hidden;
     }
-
+    &--record{
+      &__element{
+        list-style-type: none;
+        margin-bottom: 10px;
+      }
+    }
   }
 
   &__el-dialog {
@@ -628,5 +805,10 @@ img {
       }
     }
   }
+}
+.table-container__modal-window--record--element {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
 }
 </style>

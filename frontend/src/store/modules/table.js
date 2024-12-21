@@ -114,7 +114,7 @@ const actions = {
     },
     updateRecord({ dispatch }, payload) {
         const authToken = localStorage.getItem('authToken');
-        
+
         return axiosInstance.post(`/cnn_table/${authToken}/update`, payload)
             .then(() => {
                 dispatch('fetchData');
@@ -122,7 +122,38 @@ const actions = {
             .catch((error) => {
                 console.error('Ошибка при обновлении записи:', error);
             });
-      },
+    },
+    saveAudio({ dispatch }, { analyseId, audioBlob }) {
+        const authToken = localStorage.getItem('authToken');
+        const formData = new FormData();
+        const fileName = `recording_${Date.now()}.wav`;
+        formData.append('audio_file', audioBlob, fileName);
+
+        return axiosInstance.post(`/cnn_table/${authToken}/add_recording`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            params: { id: analyseId }
+        })
+            .then(() => {
+                dispatch('fetchData');
+            })
+            .catch((error) => {
+                console.error('Ошибка при сохранении аудиозаписи:', error);
+                throw error;
+            });
+    },
+    removeAllRecords({ dispatch }, analyseId) {
+        const authToken = localStorage.getItem('authToken');
+
+        return axiosInstance.get(`/cnn_table/${authToken}/delete_all_records`, {
+            params: {id: analyseId}
+        })
+            .then(() => {
+                dispatch('fetchData');
+            })
+            .catch(error => {
+                console.error('Ошибка при удалении всех данных:', error);
+            });
+    }
 };
 
 const getters = {
