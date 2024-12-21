@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import HttpResponse
-from .models import Analyse
+from .models import Analyse, Recording
 from users.models import Users
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
@@ -81,6 +81,7 @@ def cnn_result_post(request, key):
         })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
 def cnn_results_post(request, key):
     if request.method == 'POST':
         try:
@@ -135,10 +136,10 @@ def cnn_results_post(request, key):
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
                 "result": analyse.ensemble,
-                "model_1_probability": record.model_1_probability,
-                "model_2_probability": record.model_2_probability,
-                "model_3_probability": record.model_3_probability,
-                "ensemble_probability": record.ensemble_probability,
+                "model_1_probability": analyse.model_1_probability,
+                "model_2_probability": analyse.model_2_probability,
+                "model_3_probability": analyse.model_3_probability,
+                "ensemble_probability": analyse.ensemble_probability,
                 "patient": analyse.patient,
                 "description": analyse.description,
                 "diagnosis": analyse.diagnosis
@@ -173,7 +174,15 @@ def get_result(request, key):
                 "ensemble": record.ensemble,
                 "patient": record.patient,
                 "description": record.description,
-                "diagnosis": record.diagnosis
+                "diagnosis": record.diagnosis,
+                "recordings": [
+                    {
+                        "id": recording.id,
+                        "audio_file_url": recording.audio_file.url,
+                        "uploaded_at": recording.uploaded_at,
+                    }
+                    for recording in record.recordings.all()
+                ]
             }
             for record in analyse_records
         ]
@@ -290,11 +299,6 @@ def classification_images(request: Request, key):
             model_2 = individual_labels[1]
             model_3 = individual_labels[2]
             ensemble = ensemble_label
-            
-            model_1_probability = individual_probability[0]
-            model_2_probability = individual_probability[1]
-            model_3_probability = individual_probability[2]
-            ensemble_probability = max(result['ensemble_prediction'][1])
 
             model_1_probability =individual_probability[0]
             model_2_probability =individual_probability[1]
@@ -352,3 +356,36 @@ def update_analyse(request, key):
             return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'}, status=500)
 
     return JsonResponse({'success': False, 'message': 'Метод не поддерживается.'}, status=405)
+
+@csrf_exempt
+def add_recording(request, key):
+    print("Запрос получен на бэке")
+    if request.method == 'POST':
+        try:
+            user = Users.objects.get(key=key)
+        except user.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Пользователь не найден.'}, status=404)
+
+        try:
+            analyse_id = request.GET.get('id')
+            analyse = Analyse.objects.get(pk=analyse_id)
+
+            if 'audio_file' not in request.FILES:
+                return JsonResponse({'error': 'Audio file not provided'}, status=400)
+
+            audio_file = request.FILES['audio_file']
+            recording = Recording.objects.create(analyse=analyse, audio_file=audio_file)
+
+            return JsonResponse({
+                'message': 'Recording added successfully',
+                'recording_id': recording.id,
+                'uploaded_at': recording.uploaded_at,
+                'audio_file_url': recording.audio_file.url,
+            }, status=200)
+
+        except Analyse.DoesNotExist:
+            return JsonResponse({'error': 'Analyse not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)

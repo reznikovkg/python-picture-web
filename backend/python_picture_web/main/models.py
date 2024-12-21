@@ -7,7 +7,7 @@ from users.models import Users
 class Analyse(models.Model):
     user_key = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='analyses')
     image = models.ImageField(upload_to='images/', verbose_name='image')
-    datetime = models.CharField('date', max_length=128, default="27-11-2024 00:00:00")
+    datetime = models.CharField('date', max_length=128, default="-")
     model_1 = models.CharField('model 1', max_length=8)
     model_2 = models.CharField('model 2', max_length=8)
     model_3 = models.CharField('model 3', max_length=8)
@@ -19,3 +19,7 @@ class Analyse(models.Model):
     patient = models.CharField('patient', max_length=32, default="patient")
     description = models.TextField('description', default="Patient analyse description.")
     diagnosis = models.CharField('diagnosis', max_length=64, default="Не выбран", blank=True)
+class Recording(models.Model):
+    analyse = models.ForeignKey(Analyse, on_delete=models.CASCADE, related_name='recordings')
+    audio_file = models.FileField(upload_to='audio/', verbose_name='audio_file')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
