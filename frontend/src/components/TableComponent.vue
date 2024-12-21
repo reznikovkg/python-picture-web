@@ -1,120 +1,118 @@
 <template>
-  <div class="animated-container" v-loading="loading">
+  <div v-loading="loading" class="animated-container">
     <div class="table-container">
       <div class="table-container__controls">
-        <ElButton type="primary" @click="() => openLoad()">Добавить</ElButton>
-        <ElButton type="primary" @click="() => openMoreLoad()">Массовая загрузка</ElButton>
-        <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
-        <ElButton type="danger" @click="() => logout()">Выход</ElButton>
+        <ElButton @click="() => openLoad()" type="primary">Добавить</ElButton>
+        <ElButton @click="() => openMoreLoad()" type="primary">Массовая загрузка</ElButton>
+        <ElButton @click="() => deleteAll()" type="danger">Удалить все</ElButton>
+        <ElButton @click="() => logout()" type="danger">Выход</ElButton>
         <ElDialog
             :visible.sync="isDownloadModalVisible"
+            @close="() => closeDownloadModal()"
             title="Добавить данные"
             width="30%"
-            @close="closeDownloadModal"
             class="controls-container__modal-window">
           <ElForm>
             <ElFormItem label="Пациент">
-              <ElInput v-model="formData.patient" placeholder="Введите фио пациента"></ElInput>
+              <ElInput v-model="formData.patient" placeholder="Введите фио пациента"/>
             </ElFormItem>
             <ElFormItem label="Описание">
-              <ElInput v-model="formData.description" type="textarea" placeholder="Введите описание"></ElInput>
+              <ElInput v-model="formData.description" type="textarea" placeholder="Введите описание"/>
             </ElFormItem>
             <ElFormItem>
               <vue-dropzone
-                  ref="myDropzone"
-                  id="dropzone"
                   :options="dropzoneImageOptions"
                   @vdropzone-file-added="handleFileAdded"
+                  ref="myDropzone"
                   class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
-        </span>
+            <ElButton @click="() => closeDownloadModal()">Отмена</ElButton>
+            <ElButton @click="() => handleSubmit()" type="primary">Сохранить</ElButton>
+          </span>
         </ElDialog>
         <ElDialog
             :visible.sync="isDownloadImagesModalVisible"
+            @close="() => closeDownloadModal()"
             title="Добавить данные"
             width="30%"
-            @close="closeDownloadModal"
             class="controls-container__modal-window">
           <ElForm>
             <ElFormItem>
               <vue-dropzone
-                  ref="myDropzone"
-                  id="dropzone"
                   :options="dropzoneImagesOptions"
                   @vdropzone-file-added="handleFileAdded"
+                  ref="myDropzone"
                   class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmits">Сохранить</ElButton>
-        </span>
+            <ElButton @click="() => closeDownloadModal()">Отмена</ElButton>
+            <ElButton @click="() => handleSubmits()" type="primary">Сохранить</ElButton>
+          </span>
         </ElDialog>
       </div>
-
-      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row, paginatedData)">
+      <ElTable
+          :data="paginatedData"
+          @row-click="(row) => openModal(row, paginatedData)"
+          class="table-container__table" >
         <ElTableColumn label="Пациент" prop="patient"/>
         <ElTableColumn label="Изображение">
           <template #default="{ row }">
-            <img
-                class="table-container__table--preview-image"
-                :src="row.image"
-                alt="Предпросмотр"
-            />
+            <img :src="row.image" class="table-container__table--preview-image" alt="Предпросмотр"/>
           </template>
         </ElTableColumn>
         <ElTableColumn label="Дата и время загрузки" prop="date"/>
         <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)">
           <template #default="scope">
             <span>{{ formatModelsAndResult(scope.row) }}</span>
-            <i v-if="isResultMatch(scope.row)" class="table-container__result-check el-icon-check"></i>
+            <i v-if="isResultMatch(scope.row)" class="table-container__result-check el-icon-check"/>
           </template>
         </ElTableColumn>
         <ElTableColumn label="Действия" class="table-container__actions" header-align="right">
           <template #default="{ $index }">
-            <ElButton
-                type="danger"
-                size="mini"
-                @click.stop="() => deleteItem($index)">
-              Удалить
-            </ElButton>
+            <ElButton @click.stop="() => deleteItem($index)" size="mini" type="danger">Удалить</ElButton>
           </template>
         </ElTableColumn>
         <template #empty>
           <p>Нет данных для отображения. Таблица пустая.</p>
         </template>
       </ElTable>
-
       <ElDialog
           :visible.sync="isModalVisible"
+          @close="() => closeModal()"
           title="Результат"
           width="40%"
-          @close="() => closeModal()"
           class="table-container__modal-window--image">
         <div v-if="modalTitle">
           <img :src="modalTitle" alt="Изображение"/>
-          <div class="modal-probabilities">
-            <div class="field">
-              <span class="field-label">Вероятность 1 модели:</span>
-              <span class="field-value">{{ selectedRow.model_1}} - {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
+          <div class="table-container__modal-probabilities">
+            <div class="table-container__modal-probabilities--field">
+              <span class="table-container__modal-probabilities--field--field-label">Вероятность 1 модели:</span>
+              <span class="table-container__modal-probabilities--field--field-value">
+                {{ formatModelProbability(selectedRow.model_1, selectedRow.model_1_probability) }}
+              </span>
             </div>
-            <div class="field">
-              <span class="field-label">Вероятность 2 модели:</span>
-              <span class="field-value">{{ selectedRow.model_2}} - {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
+            <div class="table-container__modal-probabilities--field">
+              <span class="table-container__modal-probabilities--field--field-label">Вероятность 2 модели:</span>
+              <span class="table-container__modal-probabilities--field--field-value">
+                {{ formatModelProbability(selectedRow.model_2, selectedRow.model_2_probability) }}
+              </span>
             </div>
-            <div class="field">
-              <span class="field-label">Вероятность 3 модели:</span>
-              <span class="field-value">{{ selectedRow.model_3}} - {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
+            <div class="table-container__modal-probabilities--field">
+              <span class="table-container__modal-probabilities--field--field-label">Вероятность 3 модели:</span>
+              <span class="table-container__modal-probabilities--field--field-value">
+                {{ formatModelProbability(selectedRow.model_3, selectedRow.model_3_probability) }}
+              </span>
             </div>
-            <div class="field">
-              <span class="field-label">Вероятность ансамбля:</span>
-              <span class="field-value">{{ selectedRow.ensemble}} - {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%</span>
+            <div class="table-container__modal-probabilities--field">
+              <span class="table-container__modal-probabilities--field--field-label">Вероятность ансамбля:</span>
+              <span class="table-container__modal-probabilities--field--field-value">
+                {{ selectedRow.ensemble }} - {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%
+              </span>
             </div>
           </div>
         </div>
@@ -126,54 +124,55 @@
             <span class="field-label">Пациент:</span>
             <span class="field-value">{{ patientName }}</span>
           </div>
-
           <div class="field">
             <span class="field-label">Описание:</span>
             <span class="field-value">{{ description }}</span>
           </div>
-
           <div class="field">
             <span class="field-label">Диагноз:</span>
             <span class="field-value">{{ getDiagnosisLabel(diagnosis) }}</span>
           </div>
         </div>
-        <div slot="footer" class="el-dialog__footer">
+        <div class="el-dialog__footer" slot="footer">
           <ElButton @click="() => openEditModal()">Редактировать</ElButton>
           <ElButton @click="() => closeModal()">Закрыть</ElButton>
         </div>
       </ElDialog>
       <ElDialog
           :visible.sync="isEditModalVisible"
+          @close="() => closeEditModal()"
           title="Редактирование записи"
           width="40%"
-          @close="() => closeEditModal()"
           class="table-container__edit-modal">
         <ElForm>
           <ElFormItem label="Описание">
-            <ElInput v-model="editForm.description" type="textarea" placeholder="Введите новое описание"></ElInput>
+            <ElInput v-model="editForm.description" type="textarea" placeholder="Введите новое описание"/>
           </ElFormItem>
           <ElFormItem label="Диагноз">
             <ElSelect v-model="editForm.diagnosis" placeholder="Выберите диагноз">
-              <ElOption v-for="option in diagnosisOptions" :key="option.value" :label="option.label"
-                        :value="option.value"/>
+              <ElOption
+                  v-for="option in diagnosisOptions"
+                  :key="option.value"
+                  :label="option.label"
+                  :value="option.value"/>
               <ElOption label="Другое" value="other"/>
             </ElSelect>
           </ElFormItem>
         </ElForm>
         <span slot="footer" class="dialog-footer">
           <ElButton @click="() => closeEditModal()">Отмена</ElButton>
-          <ElButton type="primary" @click="() => submitEdit()">Сохранить</ElButton>
+          <ElButton @click="() => submitEdit()" type="primary">Сохранить</ElButton>
         </span>
       </ElDialog>
     </div>
     <div class="animated-container__pagination-container">
       <div class="pagination-container__pagination">
         <ElPagination
-            layout="prev, pager, next"
             :current-page="currentPage"
             :page-size="itemsPerPage"
             :total="data.length"
-            @current-change="(page)=>changePage(page)">
+            @current-change="(page)=>changePage(page)"
+            layout="prev, pager, next">
         </ElPagination>
       </div>
     </div>
@@ -182,6 +181,7 @@
 
 <script>
 import VueDropzone from 'vue2-dropzone';
+import "dropzone/dist/dropzone.css";
 import {mapActions} from 'vuex';
 import {MessageBox} from 'element-ui';
 import {AUTH_TOKEN} from "@/views/LoginView.vue";
@@ -204,18 +204,15 @@ export default {
       currentPage: 1,
       description: '',
       dropzoneImageOptions: {
-        url: '/upload',
-        autoProcessQueue: false,
+        url: 'https://httpbin.org/post',
         addRemoveLinks: false,
         maxFiles: 1,
         acceptedFiles: '.jpg, .jpeg',
         dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора'
       },
       dropzoneImagesOptions: {
-        url: '/upload',
-        autoProcessQueue: false,
+        url: 'https://httpbin.org/post',
         addRemoveLinks: false,
-        previewsContainer: false,
         maxFiles: 500,
         acceptedFiles: '.jpg, .jpeg',
         dictDefaultMessage: 'Перетащите файлы сюда или нажмите для выбора'
@@ -333,32 +330,7 @@ export default {
     },
     handleFileAdded: function (file) {
       console.log('Файл добавлен:', file);
-
       this.uploadedFiles.push(file);
-
-      if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = `Количество загруженных файлов: ${this.uploadedFiles.length}`;
-        }
-      }
-
-      if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = '';
-        }
-      }
-
-
-      setTimeout(() => {
-        const successMarks = document.querySelectorAll('.dz-success-mark');
-        const errorMarks = document.querySelectorAll('.dz-error-mark');
-        successMarks.forEach(mark => mark.remove());
-        errorMarks.forEach(mark => mark.remove());
-      }, 0);
     },
     handleSubmits() {
       if (this.uploadedFiles.length === 0) {
@@ -390,13 +362,6 @@ export default {
 
 
       this.isDownloadImagesModalVisible = false;
-      if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файлы сюда или нажмите для выбора';
-        }
-      }
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
@@ -436,13 +401,6 @@ export default {
           });
 
       this.isDownloadModalVisible = false;
-      if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
-        }
-      }
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
@@ -474,6 +432,10 @@ export default {
     },
     closeModal() {
       this.isModalVisible = false;
+    },
+    formatModelProbability(modelName, probability) {
+      const probabilityPercentage = (parseFloat(probability) * 100).toFixed(2);
+      return `${modelName} - ${probabilityPercentage}%`;
     },
     openEditModal() {
       this.closeModal();
@@ -524,21 +486,22 @@ export default {
 
 
 <style lang="less">
+
 .modal-fields {
   margin-top: 20px;
 
-  .field {
+  &__field {
     margin-bottom: 10px;
     font-size: 14px;
     color: #333;
 
-    .field-label {
+    &__field-label {
       font-weight: bold;
       margin-right: 5px;
       display: inline-block;
     }
 
-    .field-value {
+    &__field-value {
       color: #666;
     }
   }
@@ -561,6 +524,18 @@ img {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+.dz-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #d3d3d3;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .animated-container__pagination-container {
@@ -602,7 +577,6 @@ img {
       border-radius: 4px;
     }
 
-
     .el-table__row {
       .el-table__cell:last-child {
         text-align: right;
@@ -622,37 +596,37 @@ img {
       &__header {
         text-align: center;
       }
-
       padding: 10px;
       box-sizing: border-box;
       overflow: hidden;
     }
+
   }
 
-  .el-dialog {
+  &__el-dialog {
     &__header{
       text-align: center;
       font-size: 18px;
       font-weight: bold;
     }
   }
-}
-.modal-probabilities {
-  margin-top: 20px;
 
-  .field {
-    margin-bottom: 10px;
-    font-size: 14px;
+  &__modal-probabilities {
+    margin-top: 20px;
 
-    .field-label {
-      font-weight: bold;
-      margin-right: 5px;
-    }
+    &__field {
+      margin-bottom: 10px;
+      font-size: 14px;
 
-    .field-value {
-      color: #666;
+      &__field-label {
+        font-weight: bold;
+        margin-right: 5px;
+      }
+
+      &__field-value {
+        color: #666;
+      }
     }
   }
 }
-
 </style>
