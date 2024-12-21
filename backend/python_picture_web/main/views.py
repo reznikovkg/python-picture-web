@@ -81,6 +81,7 @@ def cnn_result_post(request, key):
         })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
 def cnn_results_post(request, key):
     if request.method == 'POST':
         try:
@@ -135,10 +136,10 @@ def cnn_results_post(request, key):
                 "model_2": analyse.model_2,
                 "model_3": analyse.model_3,
                 "result": analyse.ensemble,
-                "model_1_probability": record.model_1_probability,
-                "model_2_probability": record.model_2_probability,
-                "model_3_probability": record.model_3_probability,
-                "ensemble_probability": record.ensemble_probability,
+                "model_1_probability": analyse.model_1_probability,
+                "model_2_probability": analyse.model_2_probability,
+                "model_3_probability": analyse.model_3_probability,
+                "ensemble_probability": analyse.ensemble_probability,
                 "patient": analyse.patient,
                 "description": analyse.description,
                 "diagnosis": analyse.diagnosis
@@ -290,11 +291,6 @@ def classification_images(request: Request, key):
             model_2 = individual_labels[1]
             model_3 = individual_labels[2]
             ensemble = ensemble_label
-            
-            model_1_probability = individual_probability[0]
-            model_2_probability = individual_probability[1]
-            model_3_probability = individual_probability[2]
-            ensemble_probability = max(result['ensemble_prediction'][1])
 
             model_1_probability =individual_probability[0]
             model_2_probability =individual_probability[1]
