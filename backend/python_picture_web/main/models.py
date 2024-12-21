@@ -19,3 +19,7 @@ class Analyse(models.Model):
     patient = models.CharField('patient', max_length=32, default="patient")
     description = models.TextField('description', default="Patient analyse description.")
     diagnosis = models.CharField('diagnosis', max_length=64, default="Не выбран", blank=True)
+class Recording(models.Model):
+    analyse = models.ForeignKey(Analyse, on_delete=models.CASCADE, related_name='recordings')
+    audio_file = models.FileField(upload_to='audio/', verbose_name='audio_file')
+    uploaded_at = models.DateTimeField(auto_now_add=True)

@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.shortcuts import HttpResponse
-from .models import Analyse
+from .models import Analyse, Recording
 from users.models import Users
 from django.views.decorators.csrf import csrf_exempt
 from datetime import datetime
@@ -174,7 +174,15 @@ def get_result(request, key):
                 "ensemble": record.ensemble,
                 "patient": record.patient,
                 "description": record.description,
-                "diagnosis": record.diagnosis
+                "diagnosis": record.diagnosis,
+                "recordings": [
+                    {
+                        "id": recording.id,
+                        "audio_file_url": recording.audio_file.url,
+                        "uploaded_at": recording.uploaded_at,
+                    }
+                    for recording in record.recordings.all()
+                ]
             }
             for record in analyse_records
         ]
@@ -348,3 +356,36 @@ def update_analyse(request, key):
             return JsonResponse({'success': False, 'message': f'Ошибка: {str(e)}'}, status=500)
 
     return JsonResponse({'success': False, 'message': 'Метод не поддерживается.'}, status=405)
+
+@csrf_exempt
+def add_recording(request, key):
+    print("Запрос получен на бэке")
+    if request.method == 'POST':
+        try:
+            user = Users.objects.get(key=key)
+        except user.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Пользователь не найден.'}, status=404)
+
+        try:
+            analyse_id = request.GET.get('id')
+            analyse = Analyse.objects.get(pk=analyse_id)
+
+            if 'audio_file' not in request.FILES:
+                return JsonResponse({'error': 'Audio file not provided'}, status=400)
+
+            audio_file = request.FILES['audio_file']
+            recording = Recording.objects.create(analyse=analyse, audio_file=audio_file)
+
+            return JsonResponse({
+                'message': 'Recording added successfully',
+                'recording_id': recording.id,
+                'uploaded_at': recording.uploaded_at,
+                'audio_file_url': recording.audio_file.url,
+            }, status=200)
+
+        except Analyse.DoesNotExist:
+            return JsonResponse({'error': 'Analyse not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    return JsonResponse({'error': 'Invalid request method'}, status=405)
