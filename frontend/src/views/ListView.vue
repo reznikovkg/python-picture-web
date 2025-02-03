@@ -1,6 +1,6 @@
 <template>
   <div class="list">
-    <h1>Анализ</h1>
+    <h1 style="text-align: center">Распознавание кожных заболеваний</h1>
     <TableComponent :data="tableData"/>
   </div>
 </template>

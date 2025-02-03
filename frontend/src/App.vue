@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <RouterView/>
+    <RouterView />
   </div>
 </template>
 
@@ -12,6 +12,9 @@ export default {
     ROUTES (){
       return ROUTES
     }
+  },
+  mounted () {
+    document.title = 'Расспознавание'
   }
 }
 </script>
@@ -21,7 +24,6 @@ export default {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
   color: #2c3e50;
 }
 

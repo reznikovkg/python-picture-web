@@ -1,5 +1,6 @@
 services:
    front:
+        container_name: python-web-front
         build: ./frontend
         ports:
             - "8080:8080"
@@ -7,6 +8,7 @@ services:
             - ./frontend/src:/frontend/src
             - ./frontend/package.json:/frontend/package.json
    back:
+       container_name: python-web-back
        build: ./backend
        ports:
             - "8000:8000"

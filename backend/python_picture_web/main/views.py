@@ -81,6 +81,7 @@ def cnn_result_post(request, key):
         })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
 def cnn_results_post(request, key):
     if request.method == 'POST':
         try:
@@ -146,6 +147,7 @@ def cnn_results_post(request, key):
         })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
+
 def get_result(request, key):
     if request.method == "GET":
         try:
@@ -153,7 +155,7 @@ def get_result(request, key):
         except Users.DoesNotExist:
             return HttpResponse('Пользователь с таким ключом не найден.', status=404)
 
-        analyse_records = Analyse.objects.filter(user_key=user)
+        analyse_records = Analyse.objects.filter(user_key=user).order_by('-datetime')
 
         if not analyse_records:
              return HttpResponse('Нет записей для данного пользователя.', status=404)
@@ -290,7 +292,7 @@ def classification_images(request: Request, key):
             model_2 = individual_labels[1]
             model_3 = individual_labels[2]
             ensemble = ensemble_label
-            
+
             model_1_probability = individual_probability[0]
             model_2_probability = individual_probability[1]
             model_3_probability = individual_probability[2]

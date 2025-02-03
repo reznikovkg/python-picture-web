@@ -18,12 +18,12 @@
 
 <script>
 import axiosInstance from "@/axios";
-import {ROUTES} from "@/router";
+import { ROUTES } from "@/router";
 
 export const AUTH_TOKEN = 'authToken';
 
 export default {
-  data() {
+  data () {
     return {
       username: '',
       password: '',
@@ -31,22 +31,21 @@ export default {
     };
   },
   methods: {
-    loginUser() {
-      axiosInstance.get('auth',
-          {
-            params: {
-              login: this.username,
-              password: this.password,
-            }
-          })
-          .then((response) => {
-            const token = response.data;
-            localStorage.setItem(AUTH_TOKEN, token);
-            this.$router.push({name: ROUTES.HOME});
-          })
-          .catch(() => {
-            this.error = 'Login error';
-          });
+    loginUser () {
+      axiosInstance.get('auth', {
+        params: {
+          login: this.username,
+          password: this.password,
+        }
+      })
+        .then((response) => {
+          const token = response.data;
+          localStorage.setItem(AUTH_TOKEN, token);
+          this.$router.push({ name: ROUTES.HOME });
+        })
+        .catch(() => {
+          this.error = 'Login error';
+        });
     },
   },
 };

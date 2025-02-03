@@ -113,8 +113,9 @@ const actions = {
             });
     },
     updateRecord({ dispatch }, payload) {
+        console.log(payload)
         const authToken = localStorage.getItem('authToken');
-        
+
         return axiosInstance.post(`/cnn_table/${authToken}/update`, payload)
             .then(() => {
                 dispatch('fetchData');

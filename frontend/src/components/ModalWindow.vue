@@ -1,11 +1,11 @@
 <template>
   <div v-loading="loading">
     <el-upload
-        class="upload-demo"
-        action=""
-        :on-change="handleImageChange"
-        :auto-upload="false"
-        :show-file-list="false"
+      class="upload-demo"
+      action=""
+      :on-change="handleImageChange"
+      :auto-upload="false"
+      :show-file-list="false"
     >
       <el-button type="primary">Загрузить изображение</el-button>
     </el-upload>
@@ -16,21 +16,22 @@
     </div>
 
     <el-button
-        v-if="imageUrl"
-        type="success"
-        @click="submitImage"
-        style="margin-top: 10px;">
+      v-if="imageUrl"
+      type="success"
+      style="margin-top: 10px;"
+      @click="submitImage"
+    >
       Отправить
     </el-button>
   </div>
 </template>
 
 <script>
-import {mapActions} from 'vuex';
-import {ROUTES} from "@/router";
+import { mapActions } from 'vuex';
+import { ROUTES } from "@/router";
 
 export default {
-  data() {
+  data () {
     return {
       imageUrl: '',
       selectedFile: null,
@@ -40,12 +41,12 @@ export default {
   methods: {
     ...mapActions('table', ['predictData', 'addData']),
 
-    handleImageChange(file) {
+    handleImageChange (file) {
       this.selectedFile = file.raw;
       this.imageUrl = URL.createObjectURL(file.raw);
     },
 
-    submitImage() {
+    submitImage () {
       if (!this.selectedFile) {
         this.$message.error('Пожалуйста, выберите изображение.');
         return;
@@ -56,27 +57,26 @@ export default {
       console.log('Файл для предсказания:', this.selectedFile);
 
       this.predictData(this.selectedFile)
-          .then(response => {
+        .then(response => {
 
-            const predictions = response.data.individual_predictions.map(prediction => String(prediction[0]));
-            const ensemble = String(response.data.ensemble_prediction[0]);
+          const predictions = response.data.individual_predictions.map(prediction => String(prediction[0]));
+          const ensemble = String(response.data.ensemble_prediction[0]);
 
-            this.addData(
-                {
-                  imageFile: this.selectedFile,
-                  model1: predictions[0],
-                  model2: predictions[1],
-                  model3: predictions[2],
-                  ensemble: ensemble,
-                })
-                .then(() => {
-                  this.$store.dispatch('table/fetchData');
-                  this.$router.push({name: ROUTES.LIST});
-                })
+          this.addData({
+            imageFile: this.selectedFile,
+            model1: predictions[0],
+            model2: predictions[1],
+            model3: predictions[2],
+            ensemble: ensemble,
           })
-          .finally(() => {
-            this.loading = false;
-          })
+            .then(() => {
+              this.$store.dispatch('table/fetchData');
+              this.$router.push({ name: ROUTES.LIST });
+            })
+        })
+        .finally(() => {
+          this.loading = false;
+        })
     },
   },
 };

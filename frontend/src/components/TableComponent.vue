@@ -6,12 +6,13 @@
         <ElButton type="primary" @click="() => openMoreLoad()">Массовая загрузка</ElButton>
         <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
         <ElButton type="danger" @click="() => logout()">Выход</ElButton>
+
         <ElDialog
-            :visible.sync="isDownloadModalVisible"
-            title="Добавить данные"
-            width="30%"
-            @close="closeDownloadModal"
-            class="controls-container__modal-window">
+          :visible.sync="isDownloadModalVisible"
+          title="Добавить данные"
+          class="controls-container__modal-window"
+          @close="closeDownloadModal"
+        >
           <ElForm>
             <ElFormItem label="Пациент">
               <ElInput v-model="formData.patient" placeholder="Введите фио пациента"></ElInput>
@@ -21,11 +22,11 @@
             </ElFormItem>
             <ElFormItem>
               <vue-dropzone
-                  ref="myDropzone"
-                  id="dropzone"
-                  :options="dropzoneImageOptions"
-                  @vdropzone-file-added="handleFileAdded"
-                  class="controls-container__modal-window--dropzone">
+                ref="myDropzone"
+                id="dropzone"
+                :options="dropzoneImageOptions"
+                @vdropzone-file-added="handleFileAdded"
+                class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
@@ -34,20 +35,20 @@
           <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
         </span>
         </ElDialog>
+
         <ElDialog
-            :visible.sync="isDownloadImagesModalVisible"
-            title="Добавить данные"
-            width="30%"
-            @close="closeDownloadModal"
-            class="controls-container__modal-window">
+          :visible.sync="isDownloadImagesModalVisible"
+          title="Добавить данные"
+          @close="closeDownloadModal"
+          class="controls-container__modal-window">
           <ElForm>
             <ElFormItem>
               <vue-dropzone
-                  ref="myDropzone"
-                  id="dropzone"
-                  :options="dropzoneImagesOptions"
-                  @vdropzone-file-added="handleFileAdded"
-                  class="controls-container__modal-window--dropzone">
+                ref="myDropzone"
+                id="dropzone"
+                :options="dropzoneImagesOptions"
+                @vdropzone-file-added="handleFileAdded"
+                class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
@@ -58,30 +59,31 @@
         </ElDialog>
       </div>
 
-      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row, paginatedData)">
+      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
         <ElTableColumn label="Пациент" prop="patient"/>
-        <ElTableColumn label="Изображение">
+        <ElTableColumn label="Изображение" width="140" align="center">
           <template #default="{ row }">
             <img
-                class="table-container__table--preview-image"
-                :src="row.image"
-                alt="Предпросмотр"
+              class="table-container__table--preview-image"
+              :src="row.image"
+              alt="Предпросмотр"
             />
           </template>
         </ElTableColumn>
-        <ElTableColumn label="Дата и время загрузки" prop="date"/>
+        <ElTableColumn label="Дата и время загрузки" prop="date" width="220" align="center"/>
         <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)">
           <template #default="scope">
             <span>{{ formatModelsAndResult(scope.row) }}</span>
             <i v-if="isResultMatch(scope.row)" class="table-container__result-check el-icon-check"></i>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="Действия" class="table-container__actions" header-align="right">
-          <template #default="{ $index }">
+        <ElTableColumn label="Действия" class="table-container__actions" width="100">
+          <template #default="{ row }">
             <ElButton
-                type="danger"
-                size="mini"
-                @click.stop="() => deleteItem($index)">
+              type="danger"
+              size="mini"
+              @click.stop="() => deleteItem(row.id)"
+            >
               Удалить
             </ElButton>
           </template>
@@ -92,29 +94,37 @@
       </ElTable>
 
       <ElDialog
-          :visible.sync="isModalVisible"
-          title="Результат"
-          width="40%"
-          @close="() => closeModal()"
-          class="table-container__modal-window--image">
+        :visible.sync="isModalVisible"
+        title="Результат"
+        width="40%"
+        @close="() => closeModal()"
+        class="table-container__modal-window--image">
         <div v-if="modalTitle">
           <img :src="modalTitle" alt="Изображение"/>
           <div class="modal-probabilities">
             <div class="field">
               <span class="field-label">Вероятность 1 модели:</span>
-              <span class="field-value">{{ selectedRow.model_1}} - {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
+              <span
+                class="field-value">{{ selectedRow.model_1 }} -
+                {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность 2 модели:</span>
-              <span class="field-value">{{ selectedRow.model_2}} - {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
+              <span
+                class="field-value">{{ selectedRow.model_2 }} -
+                {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность 3 модели:</span>
-              <span class="field-value">{{ selectedRow.model_3}} - {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
+              <span
+                class="field-value">{{ selectedRow.model_3 }} -
+                {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность ансамбля:</span>
-              <span class="field-value">{{ selectedRow.ensemble}} - {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%</span>
+              <span
+                class="field-value">{{ selectedRow.ensemble }} -
+                {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%</span>
             </div>
           </div>
         </div>
@@ -137,43 +147,48 @@
             <span class="field-value">{{ getDiagnosisLabel(diagnosis) }}</span>
           </div>
         </div>
-        <div slot="footer" class="el-dialog__footer">
+        <div slot="footer">
           <ElButton @click="() => openEditModal()">Редактировать</ElButton>
           <ElButton @click="() => closeModal()">Закрыть</ElButton>
         </div>
       </ElDialog>
       <ElDialog
-          :visible.sync="isEditModalVisible"
-          title="Редактирование записи"
-          width="40%"
-          @close="() => closeEditModal()"
-          class="table-container__edit-modal">
+        :visible.sync="isEditModalVisible"
+        title="Редактирование записи"
+        width="40%"
+        class="table-container__edit-modal"
+        @close="() => closeEditModal()"
+      >
         <ElForm>
           <ElFormItem label="Описание">
             <ElInput v-model="editForm.description" type="textarea" placeholder="Введите новое описание"></ElInput>
           </ElFormItem>
           <ElFormItem label="Диагноз">
             <ElSelect v-model="editForm.diagnosis" placeholder="Выберите диагноз">
-              <ElOption v-for="option in diagnosisOptions" :key="option.value" :label="option.label"
-                        :value="option.value"/>
+              <ElOption
+                v-for="option in diagnosisOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
               <ElOption label="Другое" value="other"/>
             </ElSelect>
           </ElFormItem>
         </ElForm>
         <span slot="footer" class="dialog-footer">
           <ElButton @click="() => closeEditModal()">Отмена</ElButton>
-          <ElButton type="primary" @click="() => submitEdit()">Сохранить</ElButton>
+          <ElButton type="primary" @click="() => submitEdit()">Сохранить!</ElButton>
         </span>
       </ElDialog>
     </div>
     <div class="animated-container__pagination-container">
       <div class="pagination-container__pagination">
         <ElPagination
-            layout="prev, pager, next"
-            :current-page="currentPage"
-            :page-size="itemsPerPage"
-            :total="data.length"
-            @current-change="(page)=>changePage(page)">
+          layout="prev, pager, next"
+          :current-page="currentPage"
+          :page-size="itemsPerPage"
+          :total="data.length"
+          @current-change="(page)=>changePage(page)">
         </ElPagination>
       </div>
     </div>
@@ -182,11 +197,11 @@
 
 <script>
 import VueDropzone from 'vue2-dropzone';
-import {mapActions} from 'vuex';
-import {MessageBox} from 'element-ui';
-import {AUTH_TOKEN} from "@/views/LoginView.vue";
+import { mapActions } from 'vuex';
+import { MessageBox } from 'element-ui';
+import { AUTH_TOKEN } from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
-import {ROUTES} from "@/router";
+import { ROUTES } from "@/router";
 import router from "@/router";
 
 export default {
@@ -199,7 +214,7 @@ export default {
       required: true,
     },
   },
-  data() {
+  data () {
     return {
       currentPage: 1,
       description: '',
@@ -227,7 +242,7 @@ export default {
       isDownloadModalVisible: false,
       isDownloadImagesModalVisible: false,
       isModalVisible: false,
-      itemsPerPage: 5,
+      itemsPerPage: 10,
       loading: false,
       modalTitle: '',
       patientName: '',
@@ -238,97 +253,113 @@ export default {
         description: '',
         diagnosis: '',
       },
-      diagnosisOptions: [
-        {label: 'Актинический кератоз (AK)', value: 'AK'},
-        {label: 'Базальноклеточная карцинома (BCC)', value: 'BCC'},
-        {label: 'Доброкачественный кератоз (BKL)', value: 'BKL'},
-        {label: 'Дерматофиброма (DF)', value: 'DF'},
-        {label: 'Меланома (MEL)', value: 'MEL'},
-        {label: 'Меланоцитарный невус (NV)', value: 'NV'},
-        {label: 'Плоскоклеточный рак (SCC)', value: 'SCC'},
-        {label: 'Сосудистое поражение (VASC)', value: 'VASC'},
-      ],
     };
   },
   computed: {
-    paginatedData() {
+    paginatedData () {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.data.slice(start, end);
     },
-    imageUrl() {
-      return `${this.axiosInstance.defaults.baseURL}${this.modalTitle}`;
+    imageUrl () {
+      return `${ this.axiosInstance.defaults.baseURL }${ this.modalTitle }`;
+    },
+    diagnosisOptions () {
+      return [
+        { label: 'Актинический кератоз (AK)', value: 'AK' },
+        { label: 'Базальноклеточная карцинома (BCC)', value: 'BCC' },
+        { label: 'Доброкачественный кератоз (BKL)', value: 'BKL' },
+        { label: 'Дерматофиброма (DF)', value: 'DF' },
+        { label: 'Меланома (MEL)', value: 'MEL' },
+        { label: 'Меланоцитарный невус (NV)', value: 'NV' },
+        { label: 'Плоскоклеточный рак (SCC)', value: 'SCC' },
+        { label: 'Сосудистое поражение (VASC)', value: 'VASC' },
+      ]
+    },
+    diagnosisLabels () {
+      const t = {
+        'undefined': '-'
+      }
+      this.diagnosisOptions.forEach(i => {
+        t[i.value] = i.label
+      })
+      return t
     }
   },
   methods: {
     axiosInstance,
-    ...mapActions('table', ['removeData', 'removeAllData', 'predictData', 'predictListData', 'fetchData', 'updateRecord']),
+    ...mapActions('table', [
+      'removeData',
+      'removeAllData',
+      'predictData',
+      'predictListData',
+      'fetchData',
+      'updateRecord'
+    ]),
 
-    logout() {
+    logout () {
       MessageBox.confirm(
-          'Вы уверены, что хотите выйти?',
-          'Подтверждение выхода',
-          {
-            confirmButtonText: 'Да',
-            cancelButtonText: 'Нет',
-            type: 'warning',
-          }
+        'Вы уверены, что хотите выйти?',
+        'Подтверждение выхода',
+        {
+          confirmButtonText: 'Да',
+          cancelButtonText: 'Нет',
+          type: 'warning',
+        }
       )
-          .then(() => {
-            localStorage.removeItem(AUTH_TOKEN)
-            router.push(ROUTES.LOGIN)
-          })
-          .catch(() => {
-            console.log("Выход отменён")
-          });
+        .then(() => {
+          localStorage.removeItem(AUTH_TOKEN)
+          router.push(ROUTES.LOGIN)
+        })
+        .catch(() => {
+          console.log("Выход отменён")
+        });
     },
-    formatModelsAndResult(row) {
-      return `${row.model_1} / ${row.model_2} / ${row.model_3} (${row.ensemble})`;
+    formatModelsAndResult (row) {
+      return `${ row.model_1 } / ${ row.model_2 } / ${ row.model_3 } (${row.ensemble} - ${ this.diagnosisLabels[row.ensemble] })`;
     },
-    changePage(page) {
+    changePage (page) {
       this.currentPage = page;
     },
-    deleteItem(index) {
+    deleteItem (id) {
       MessageBox.confirm(
-          'Вы уверены, что хотите удалить этот элемент?',
-          'Подтверждение удаления',
-          {
-            confirmButtonText: 'Да',
-            cancelButtonText: 'Нет',
-            type: 'warning',
-          }
+        'Вы уверены, что хотите удалить этот элемент?',
+        'Подтверждение удаления',
+        {
+          confirmButtonText: 'Да',
+          cancelButtonText: 'Нет',
+          type: 'warning',
+        }
       )
-          .then(() => {
-            const globalIndex = (this.currentPage - 1) * this.itemsPerPage + index;
-            const itemToRemove = this.data[globalIndex];
-            this.removeData(itemToRemove.id);
-          })
-          .catch(() => {
-            console.log('Удаление отменено.');
-          });
+        .then(() => {
+          this.removeData(id)
+        })
+        .catch(() => {
+          console.log('Удаление отменено.');
+        });
     },
-    deleteAll() {
+    deleteAll () {
       MessageBox.confirm(
-          'Вы уверены, что хотите удалить все?',
-          'Подтверждение удаления',
-          {
-            confirmButtonText: 'Да',
-            cancelButtonText: 'Нет',
-            type: 'warning',
-          }
+        'Вы уверены, что хотите удалить все?',
+        'Подтверждение удаления',
+        {
+          confirmButtonText: 'Да',
+          cancelButtonText: 'Нет',
+          type: 'warning',
+        }
       )
-          .then(() => {
-            console.log("Удаление подтверждено.");
-            this.removeAllData();
-          })
-          .catch(() => {
-            this.$message.info('Удаление отменено.');
-          });
+        .then(() => {
+          console.log("Удаление подтверждено.");
+          this.removeAllData();
+        })
+        .catch(() => {
+          this.$message.info('Удаление отменено.');
+        });
     },
-    openLoad() {
+    openLoad () {
       this.isDownloadModalVisible = true;
     },
-    openMoreLoad() {
+    openMoreLoad () {
       this.isDownloadImagesModalVisible = true;
     },
     handleFileAdded: function (file) {
@@ -340,7 +371,7 @@ export default {
         const dropzoneElement = this.$refs.myDropzone.$el;
         const messageElement = dropzoneElement.querySelector('.dz-message');
         if (messageElement) {
-          messageElement.innerText = `Количество загруженных файлов: ${this.uploadedFiles.length}`;
+          messageElement.innerText = `Количество загруженных файлов: ${ this.uploadedFiles.length }`;
         }
       }
 
@@ -360,7 +391,7 @@ export default {
         errorMarks.forEach(mark => mark.remove());
       }, 0);
     },
-    handleSubmits() {
+    handleSubmits () {
       if (this.uploadedFiles.length === 0) {
         this.$message.error('Пожалуйста, загрузите изображения.');
         return;
@@ -380,13 +411,13 @@ export default {
       }).then(() => {
         this.$message.success('Данные успешно отправлены и обработаны!');
       })
-          .catch(error => {
-            console.error('Ошибка предсказания:', error);
-            this.$message.error('Ошибка при выполнении предсказания.');
-          })
-          .finally(() => {
-            this.loading = false;
-          });
+        .catch(error => {
+          console.error('Ошибка предсказания:', error);
+          this.$message.error('Ошибка при выполнении предсказания.');
+        })
+        .finally(() => {
+          this.loading = false;
+        });
 
 
       this.isDownloadImagesModalVisible = false;
@@ -401,7 +432,7 @@ export default {
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
-    handleSubmit() {
+    handleSubmit () {
       console.log('Данные, полученные из формы:');
       console.log('Файл:', this.uploadedFiles[0]);
       console.log('Пациент:', this.formData.patient);
@@ -424,16 +455,16 @@ export default {
         patient: this.formData.patient,
         description: this.formData.description
       })
-          .then(() => {
-            this.$message.success('Данные успешно отправлены и обработаны!');
-          })
-          .catch(error => {
-            console.error('Ошибка предсказания:', error);
-            this.$message.error('Ошибка при выполнении предсказания.');
-          })
-          .finally(() => {
-            this.loading = false;
-          });
+        .then(() => {
+          this.$message.success('Данные успешно отправлены и обработаны!');
+        })
+        .catch(error => {
+          console.error('Ошибка предсказания:', error);
+          this.$message.error('Ошибка при выполнении предсказания.');
+        })
+        .finally(() => {
+          this.loading = false;
+        });
 
       this.isDownloadModalVisible = false;
       if (this.uploadedFiles.length === 1) {
@@ -447,14 +478,14 @@ export default {
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
-    closeDownloadModal() {
+    closeDownloadModal () {
       this.isDownloadModalVisible = false;
       this.isDownloadImagesModalVisible = false;
       this.uploadedFiles = [];
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
-    openModal(row) {
+    openModal (row) {
       this.isModalVisible = true;
       this.modalTitle = row.image;
       this.patientName = row.patient;
@@ -472,50 +503,50 @@ export default {
         ensemble_probability: row.ensemble_probability || 0
       };
     },
-    closeModal() {
+    closeModal () {
       this.isModalVisible = false;
     },
-    openEditModal() {
+    openEditModal () {
       this.closeModal();
       this.isEditModalVisible = true;
       this.editForm.id = this.selectedRow.id;
       this.editForm.description = this.selectedRow.description;
       this.editForm.diagnosis = this.selectedRow.diagnosis;
     },
-    closeEditModal() {
+    closeEditModal () {
       this.isEditModalVisible = false;
       this.isModalVisible = true;
     },
-    submitEdit() {
+    submitEdit () {
       if (!this.editForm.description || !this.editForm.diagnosis) {
         this.$message.error('Пожалуйста, заполните все поля.');
         return;
       }
 
       this.updateRecord(this.editForm)
-          .then(() => {
-            this.$message.success('Запись успешно обновлена!');
+        .then(() => {
+          this.$message.success('Запись успешно обновлена!');
 
-            this.description = this.editForm.description;
-            this.diagnosis = this.editForm.diagnosis;
+          this.description = this.editForm.description;
+          this.diagnosis = this.editForm.diagnosis;
 
-            if (this.selectedRow && this.selectedRow.id === this.editForm.id) {
-              this.selectedRow.description = this.editForm.description;
-              this.selectedRow.diagnosis = this.editForm.diagnosis;
-            }
+          if (this.selectedRow && this.selectedRow.id === this.editForm.id) {
+            this.selectedRow.description = this.editForm.description;
+            this.selectedRow.diagnosis = this.editForm.diagnosis;
+          }
 
-            this.closeEditModal();
-          })
-          .catch((error) => {
-            console.error('Ошибка при обновлении записи:', error);
-            this.$message.error('Ошибка при обновлении записи.');
-          });
+          this.closeEditModal();
+        })
+        .catch((error) => {
+          console.error('Ошибка при обновлении записи:', error);
+          this.$message.error('Ошибка при обновлении записи.');
+        });
     },
-    getDiagnosisLabel(value) {
+    getDiagnosisLabel (value) {
       const option = this.diagnosisOptions.find(option => option.value === value);
       return option ? option.label : value;
     },
-    isResultMatch(row) {
+    isResultMatch (row) {
       return row.ensemble === row.diagnosis;
     },
   },
@@ -545,15 +576,15 @@ export default {
 }
 
 .controls-container__modal-window--dropzone {
-  background-color: rgba(192, 192, 192, 0.7);
-  border: #ccc;
+  background-color: #f5f5f5;
+  border: transparent;
   border-radius: 10px;
   padding: 20px;
   text-align: center;
   transition: background-color 0.3s ease;
 
   &:hover {
-    background-color: rgba(192, 192, 192, 1);
+    background-color: #f0f0f0;
   }
 }
 
@@ -575,7 +606,6 @@ img {
 
 .table-container {
   margin: 20px;
-  text-align: end;
 
   &__header {
     display: flex;
@@ -601,13 +631,6 @@ img {
       padding: 2px;
       border-radius: 4px;
     }
-
-
-    .el-table__row {
-      .el-table__cell:last-child {
-        text-align: right;
-      }
-    }
   }
 
   &__result-check {
@@ -630,13 +653,14 @@ img {
   }
 
   .el-dialog {
-    &__header{
+    &__header {
       text-align: center;
       font-size: 18px;
       font-weight: bold;
     }
   }
 }
+
 .modal-probabilities {
   margin-top: 20px;
 
