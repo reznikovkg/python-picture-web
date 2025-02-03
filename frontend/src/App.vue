@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div>
     <RouterView />
   </div>
 </template>
@@ -14,17 +14,19 @@ export default {
     }
   },
   mounted () {
-    document.title = 'Расспознавание'
+    document.title = 'Распознавание'
   }
 }
 </script>
 
 <style lang="less">
-#app {
+body {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
+  padding: 0;
+  margin: 0;
 }
 
 nav {

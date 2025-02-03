@@ -72,9 +72,9 @@
         </ElTableColumn>
         <ElTableColumn label="Дата и время загрузки" prop="date" width="220" align="center"/>
         <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)">
-          <template #default="scope">
-            <span>{{ formatModelsAndResult(scope.row) }}</span>
-            <i v-if="isResultMatch(scope.row)" class="table-container__result-check el-icon-check"></i>
+          <template #default="{ row }">
+            <span>{{ formatModelsAndResult(row) }}</span>
+            <i v-if="row.ensemble === row.diagnosis" class="table-container__result-check el-icon-check"></i>
           </template>
         </ElTableColumn>
         <ElTableColumn label="Действия" class="table-container__actions" width="100">
@@ -94,37 +94,40 @@
       </ElTable>
 
       <ElDialog
-        :visible.sync="isModalVisible"
+        v-if="selectedRow"
+        :visible.sync="isSelected"
         title="Результат"
         width="40%"
+        class="table-container__modal-window--image"
         @close="() => closeModal()"
-        class="table-container__modal-window--image">
-        <div v-if="modalTitle">
-          <img :src="modalTitle" alt="Изображение"/>
+      >
+        <div v-if="selectedRow.image">
+          <img :src="selectedRow.image" alt="Изображение"/>
           <div class="modal-probabilities">
             <div class="field">
               <span class="field-label">Вероятность 1 модели:</span>
               <span
-                class="field-value">{{ selectedRow.model_1 }} -
+                class="field-value">{{ listObj[selectedRow.model_1] }} -
                 {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность 2 модели:</span>
               <span
-                class="field-value">{{ selectedRow.model_2 }} -
+                class="field-value">{{ listObj[selectedRow.model_2] }} -
                 {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность 3 модели:</span>
               <span
-                class="field-value">{{ selectedRow.model_3 }} -
+                class="field-value">{{ listObj[selectedRow.model_3] }} -
                 {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
             </div>
             <div class="field">
               <span class="field-label">Вероятность ансамбля:</span>
-              <span
-                class="field-value">{{ selectedRow.ensemble }} -
-                {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%</span>
+              <span class="field-value">
+                {{ listObj[selectedRow.ensemble] }} -
+                {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%
+              </span>
             </div>
           </div>
         </div>
@@ -134,17 +137,19 @@
         <div class="modal-fields">
           <div class="field">
             <span class="field-label">Пациент:</span>
-            <span class="field-value">{{ patientName }}</span>
+            <span class="field-value">{{ selectedRow.patient }}</span>
           </div>
 
           <div class="field">
             <span class="field-label">Описание:</span>
-            <span class="field-value">{{ description }}</span>
+            <span class="field-value">{{ selectedRow.description }}</span>
           </div>
 
           <div class="field">
             <span class="field-label">Диагноз:</span>
-            <span class="field-value">{{ getDiagnosisLabel(diagnosis) }}</span>
+            <span class="field-value">{{ getDiagnosisLabel(selectedRow.diagnosis) }}</span>
+
+            <i v-if="selectedRow.diagnosis === selectedRow.ensemble" class="table-container__result-check el-icon-check"></i>
           </div>
         </div>
         <div slot="footer">
@@ -204,6 +209,17 @@ import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
 import router from "@/router";
 
+const list = {
+  AK: 'Актинический кератоз (AK)',
+  BCC: 'Базальноклеточная карцинома (BCC)',
+  BKL: 'Доброкачественный кератоз (BKL)',
+  DF: 'Дерматофиброма (DF)',
+  MEL: 'Меланома (MEL)',
+  NV: 'Меланоцитарный невус (NV)',
+  SCC: 'Плоскоклеточный рак (SCC)',
+  VASC: 'Сосудистое поражение (VASC)'
+}
+
 export default {
   components: {
     VueDropzone,
@@ -216,8 +232,10 @@ export default {
   },
   data () {
     return {
+      selectedRow: null,
       currentPage: 1,
       description: '',
+
       dropzoneImageOptions: {
         url: '/upload',
         autoProcessQueue: false,
@@ -235,17 +253,16 @@ export default {
         acceptedFiles: '.jpg, .jpeg',
         dictDefaultMessage: 'Перетащите файлы сюда или нажмите для выбора'
       },
+
       formData: {
         patient: '',
         description: '',
       },
+
       isDownloadModalVisible: false,
       isDownloadImagesModalVisible: false,
-      isModalVisible: false,
       itemsPerPage: 10,
       loading: false,
-      modalTitle: '',
-      patientName: '',
       uploadedFiles: [],
       isEditModalVisible: false,
       editForm: {
@@ -256,13 +273,16 @@ export default {
     };
   },
   computed: {
+    isSelected () {
+      return !!this.selectedRow
+    },
     paginatedData () {
       const start = (this.currentPage - 1) * this.itemsPerPage;
       const end = start + this.itemsPerPage;
       return this.data.slice(start, end);
     },
-    imageUrl () {
-      return `${ this.axiosInstance.defaults.baseURL }${ this.modalTitle }`;
+    listObj () {
+      return list
     },
     diagnosisOptions () {
       return [
@@ -316,7 +336,7 @@ export default {
         });
     },
     formatModelsAndResult (row) {
-      return `${ row.model_1 } / ${ row.model_2 } / ${ row.model_3 } (${row.ensemble} - ${ this.diagnosisLabels[row.ensemble] })`;
+      return `${ row.model_1 } / ${ row.model_2 } / ${ row.model_3 } (${ this.diagnosisLabels[row.ensemble] })`;
     },
     changePage (page) {
       this.currentPage = page;
@@ -486,36 +506,23 @@ export default {
       this.$refs.myDropzone.removeAllFiles();
     },
     openModal (row) {
-      this.isModalVisible = true;
-      this.modalTitle = row.image;
-      this.patientName = row.patient;
-      this.description = row.description;
-      this.diagnosis = row.diagnosis;
       this.selectedRow = {
         ...row,
-        model_1: row.model_1 || "Нет данных",
-        model_2: row.model_2 || "Нет данных",
-        model_3: row.model_3 || "Нет данных",
-        ensemble: row.ensemble || "Нет данных",
-        model_1_probability: row.model_1_probability || 0,
-        model_2_probability: row.model_2_probability || 0,
-        model_3_probability: row.model_3_probability || 0,
-        ensemble_probability: row.ensemble_probability || 0
-      };
+      }
     },
     closeModal () {
-      this.isModalVisible = false;
+      this.selectedRow = null;
     },
     openEditModal () {
-      this.closeModal();
       this.isEditModalVisible = true;
       this.editForm.id = this.selectedRow.id;
       this.editForm.description = this.selectedRow.description;
-      this.editForm.diagnosis = this.selectedRow.diagnosis;
+      this.editForm.diagnosis = this.selectedRow.diagnosis
+
+      this.closeModal();
     },
     closeEditModal () {
       this.isEditModalVisible = false;
-      this.isModalVisible = true;
     },
     submitEdit () {
       if (!this.editForm.description || !this.editForm.diagnosis) {
@@ -545,10 +552,7 @@ export default {
     getDiagnosisLabel (value) {
       const option = this.diagnosisOptions.find(option => option.value === value);
       return option ? option.label : value;
-    },
-    isResultMatch (row) {
-      return row.ensemble === row.diagnosis;
-    },
+    }
   },
 };
 </script>
@@ -617,7 +621,7 @@ img {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
-    text-align: center;
+    margin-bottom: 20px;
   }
 
   &__table {

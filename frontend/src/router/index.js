@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import ListView from "@/views/ListView.vue";
 import LoginView from "@/views/LoginView.vue";
+import FirstView from "@/views/FirstView.vue";
 import { AUTH_TOKEN } from "@/views/LoginView.vue";
 
 Vue.use(VueRouter)
@@ -10,14 +11,10 @@ export const ROUTES = {
   HOME: 'home',
   LOGIN: 'login',
   LIST: 'list',
+  PREVIEW: 'preview',
 }
 
 const routes = [
-  {
-    path: '/',
-    name: ROUTES.HOME,
-    redirect: { name: ROUTES.LIST },
-  },
   {
     path: '/login',
     name: ROUTES.LOGIN,
@@ -28,7 +25,13 @@ const routes = [
     name: ROUTES.LIST,
     component: ListView,
     meta: { requiresAuth: true },
-  }
+  },
+  {
+    path: '/*',
+    name: ROUTES.PREVIEW,
+    component: FirstView,
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = new VueRouter({
@@ -39,6 +42,7 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem(AUTH_TOKEN);
+
   if (to.matched.some(record => record.meta.requiresAuth) && !token) {
     next({ name: ROUTES.LOGIN });
   } else {

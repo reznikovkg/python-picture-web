@@ -1,6 +1,7 @@
 <template>
   <div class="login">
-    <h1>Login</h1>
+    <h1>Войти в личный кабинет</h1>
+    <h3>Укажите логин и пароль</h3>
     <form @submit.prevent="loginUser">
       <div class="login__form-group">
         <label for="username">Логин:</label>

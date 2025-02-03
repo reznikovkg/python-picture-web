@@ -1,5 +1,7 @@
+version: '3.9'
+
 services:
-   front:
+    front:
         container_name: python-web-front
         build: ./frontend
         ports:
@@ -7,7 +9,7 @@ services:
         volumes:
             - ./frontend/src:/frontend/src
             - ./frontend/package.json:/frontend/package.json
-   back:
+    back:
        container_name: python-web-back
        build: ./backend
        ports:
