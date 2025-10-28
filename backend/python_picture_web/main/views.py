@@ -157,6 +157,12 @@ def get_result(request, key):
 
         analyse_records = Analyse.objects.filter(user_key=user).order_by('-datetime')
 
+        # роль пользователя
+        if user.role == 'admin':
+            analyse_records = Analyse.objects.all().order_by('-datetime')
+        else:
+            analyse_records = Analyse.objects.filter(user_key=user).order_by('-datetime')
+
         if not analyse_records:
              return HttpResponse('Нет записей для данного пользователя.', status=404)
 
