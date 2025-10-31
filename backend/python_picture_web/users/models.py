@@ -13,6 +13,11 @@ class Users(models.Model):
     key = models.CharField('key', max_length=32)
     role = models.CharField('role', choices=ROLES_CHOICES, default='regular', max_length=10)
     authorization = models.BooleanField('authorization', default=False)
-
+    
+    
     def __str__(self):
         return self.login
+
+
+#Users.objects.create(id=11, login='Maxim', password='123', key='keyMax',role='admin',authorization=True)
+

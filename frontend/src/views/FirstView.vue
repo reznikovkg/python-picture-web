@@ -27,16 +27,7 @@
   </div>
 </template>
 
-<script>
-import TableComponent from '@/components/TableComponent.vue'
 
-export default {
-  name: 'ListVue',
-  components: {
-    TableComponent,
-  }
-}
-</script>
 
 <style scoped lang="less">
 .main {
