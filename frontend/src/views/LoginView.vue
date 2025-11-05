@@ -44,8 +44,14 @@ export default {
           localStorage.setItem(AUTH_TOKEN, token);
           this.$router.push({ name: ROUTES.HOME });
         })
-        .catch(() => {
-          this.error = 'Login error';
+        .catch((error) => {
+          if (error.response && error.response.status === 401) {
+            this.error = 'Unauthorized';
+          } else if (error.response && error.response.status === 404) {
+            this.error = 'User ${this.username} not found';
+          } else {
+            this.error = 'Login error';
+          }
         });
     },
   },
