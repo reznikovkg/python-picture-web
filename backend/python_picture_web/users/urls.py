@@ -2,6 +2,6 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    #path('', views.authorization)
-    path('auth/', views.authorization, name='auth')
+    path('auth', views.auth_view, name='auth'),
+    # остальные ваши URL...
 ]

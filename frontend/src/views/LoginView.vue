@@ -48,7 +48,7 @@ export default {
           if (error.response && error.response.status === 401) {
             this.error = 'Unauthorized';
           } else if (error.response && error.response.status === 404) {
-            this.error = 'User not found';
+            this.error = 'User ${this.username} not found';
           } else {
             this.error = 'Login error';
           }
