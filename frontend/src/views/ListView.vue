@@ -12,12 +12,12 @@
     <TableComponent :data="tableData"/>
     <div v-if="userRole !== 'admin'" class="no-access-message">
       
-      Вы видите только свои записи. Администратор видит все записи.
+      Вы видите только свои записи. Администратор видит все записи. Текущая роль: <strong>{{ userRole }}</strong>.
 
     </div>
     <div v-if="userRole === 'admin'" class="admin-message">
       
-      Вы видите все записи системы.
+      Вы видите все записи системы. Текущая роль: <strong>{{ userRole }}</strong>.
     
     </div>
   </div>
@@ -26,6 +26,7 @@
 <script>
 import TableComponent from '@/components/TableComponent.vue';
 import { mapGetters } from 'vuex';
+import { mapState } from 'vuex';
 
 export default {
   name: 'ListVue',
@@ -33,6 +34,7 @@ export default {
     TableComponent,
   },
   computed: {
+    ...mapState('auth', ['userRole']),  // получение роли пользователя из Vuex
     ...mapGetters('table', ['getTableData']),
     tableData() {
       return this.getTableData.results || [];

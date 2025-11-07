@@ -27,10 +27,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/*',
+    path: '/', // главная страница доступна без авторизации (сначала - информация о сервисе, а только потом - просьба ввести логин и пароль)
     name: ROUTES.PREVIEW,
     component: FirstView,
-    meta: { requiresAuth: true },
+  },
+  {
+    path: '/*',
+    redirect: '/', // редирект всех неизвестных путей на главную (на всякий случай)
   },
 ]
 
@@ -42,10 +45,16 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem(AUTH_TOKEN);
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
-  if (to.matched.some(record => record.meta.requiresAuth) && !token) {
+  if (requiresAuth && !token) {
+    // Если маршрут требует авторизации, а токена нет - на страницу логина
     next({ name: ROUTES.LOGIN });
+  } else if (to.name === ROUTES.LOGIN && token) {
+    // Если пользователь уже авторизован и пытается зайти на логин - на список
+    next({ name: ROUTES.LIST });
   } else {
+    // Во всех остальных случаях - разрешаем переход
     next();
   }
 });
