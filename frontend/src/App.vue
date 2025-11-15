@@ -10,27 +10,20 @@
 
 <script>
 import { ROUTES } from '@/router'
-import { mapState } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
   computed: {
     ROUTES (){
       return ROUTES
     },
-    ...mapState('auth', ['userRole', 'userToken'])
+    ...mapGetters('auth', ['getUserRole', 'getUserToken'])
   },
   mounted () {
     document.title = 'Распознавание'
   },
   methods: {
-    setTestRole() {
-      this.$store.commit('auth/SET_USER_ROLE', 'admin');
-      this.$store.commit('auth/SET_USER_TOKEN', 'test-token');
-    },
-    setRegularRole() {
-      this.$store.commit('auth/SET_USER_ROLE', 'regular');
-      this.$store.commit('auth/SET_USER_TOKEN', 'test-token');
-    }
+    ...mapActions('auth', ['setTestAdminRole', 'setTestRegularRole'])
   }
 
 }

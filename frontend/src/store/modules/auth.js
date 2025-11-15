@@ -75,6 +75,22 @@ const actions = {
       commit('SET_USER_ROLE', role || '');
       commit('SET_USER_LOGIN', login || '');
     }
+  },
+
+  setTestAdminRole({ commit }) {
+    commit('SET_USER_ROLE', 'admin');
+    commit('SET_USER_TOKEN', 'test-token-admin');
+    // Также обновляем localStorage для сохранения состояния
+    localStorage.setItem('userRole', 'admin');
+    localStorage.setItem('authToken', 'test-token-admin');
+  },
+
+  setTestRegularRole({ commit }) {
+    commit('SET_USER_ROLE', 'regular');
+    commit('SET_USER_TOKEN', 'test-token-regular');
+    // Также обновляем localStorage для сохранения состояния
+    localStorage.setItem('userRole', 'regular');
+    localStorage.setItem('authToken', 'test-token-regular');
   }
 };
 
