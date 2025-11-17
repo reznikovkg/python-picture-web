@@ -1,21 +1,31 @@
 <template>
   <div>
+     <!-- Временная отладка -->
+    <div v-if="true" style="position: fixed; top: 10px; right: 10px; background: yellow; padding: 10px; z-index: 1000;">
+      Debug: {{ userRole }} | {{ userToken }}
+    </div>
     <RouterView />
   </div>
 </template>
 
 <script>
 import { ROUTES } from '@/router'
+import { mapGetters, mapActions } from 'vuex'
 
 export default {
   computed: {
     ROUTES (){
       return ROUTES
-    }
+    },
+    ...mapGetters('auth', ['getUserRole', 'getUserToken'])
   },
   mounted () {
     document.title = 'Распознавание'
+  },
+  methods: {
+    ...mapActions('auth', ['setTestAdminRole', 'setTestRegularRole'])
   }
+
 }
 </script>
 

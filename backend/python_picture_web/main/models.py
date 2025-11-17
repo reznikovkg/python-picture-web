@@ -19,3 +19,6 @@ class Analyse(models.Model):
     patient = models.CharField('patient', max_length=32, default="patient")
     description = models.TextField('description', default="Patient analyse description.")
     diagnosis = models.CharField('diagnosis', max_length=64, default="Не выбран", blank=True)
+
+    def __str__(self):
+        return f"{self.user_key.login}'s analysis ({self.datetime})"

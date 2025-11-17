@@ -12,15 +12,13 @@
         <input type="password" v-model="password" class="login__input" required/>
       </div>
       <button type="submit" class="login__button login__button--large">Войти</button>
-      <p v-if="error">{{ error }}</p>
+      <p v-if="error" style="color: red; text-align: center;">{{ error }}</p>
     </form>
   </div>
 </template>
 
 <script>
-import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
-
 export const AUTH_TOKEN = 'authToken';
 
 export default {
@@ -33,20 +31,18 @@ export default {
   },
   methods: {
     loginUser () {
-      axiosInstance.get('auth', {
-        params: {
-          login: this.username,
-          password: this.password,
-        }
+      this.error = null; // ошибку в ноль
+      
+      this.$store.dispatch('auth/login', {
+        login: this.username,
+        password: this.password,
       })
-        .then((response) => {
-          const token = response.data;
-          localStorage.setItem(AUTH_TOKEN, token);
-          this.$router.push({ name: ROUTES.HOME });
-        })
-        .catch(() => {
-          this.error = 'Login error';
-        });
+      .then(() => {
+        this.$router.push({ name: ROUTES.LIST });
+      })
+      .catch((error) => {
+        console.error('Login error:', error);
+      });
     },
   },
 };

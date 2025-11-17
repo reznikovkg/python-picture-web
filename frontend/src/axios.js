@@ -30,11 +30,11 @@ axiosInstance.interceptors.response.use(
             status: response.status,     // Статус ответа
             data: response.data,         // Данные ответа
         });
-        return response;  // Обязательно возвращаем response
+        return response;  // возвращаем response
     },
     (error) => {
-        console.error('Ошибка ответа:', error.response);  // Логирование ошибки ответа
-        return Promise.reject(error);  // Обработка ошибки
+        console.error('Ошибка ответа:', error.response);  // логирование ошибки ответа
+        return Promise.reject(error);  // обработка ошибки
     }
 );
 
