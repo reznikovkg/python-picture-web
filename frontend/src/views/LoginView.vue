@@ -30,31 +30,19 @@ export default {
     };
   },
   methods: {
-    async loginUser () {
+    loginUser () {
       this.error = null; // ошибку в ноль
       
-      try {
-        await this.$store.dispatch('auth/login', { // vuex action для авторизации
-          login: this.username,
-          password: this.password,
-        });
-        
-        this.$router.push({ name: ROUTES.LIST }); // на страницу списка
-      } catch (error) {
+      this.$store.dispatch('auth/login', {
+        login: this.username,
+        password: this.password,
+      })
+      .then(() => {
+        this.$router.push({ name: ROUTES.LIST });
+      })
+      .catch((error) => {
         console.error('Login error:', error);
-        
-        if (error.response && error.response.status === 401) {
-          this.error = 'Неверный пароль';
-        } else if (error.response && error.response.status === 403) {
-          this.error = 'Пользователь не авторизован';
-        } else if (error.response && error.response.status === 404) {
-          this.error = `Пользователь ${this.username} не найден`;
-        } else if (error.response && error.response.data && error.response.data.error) {
-          this.error = error.response.data.error;
-        } else {
-          this.error = 'Ошибка входа. Попробуйте еще раз.';
-        }
-      }
+      });
     },
   },
 };
