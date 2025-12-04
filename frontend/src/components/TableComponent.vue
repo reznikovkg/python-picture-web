@@ -4,7 +4,7 @@
       <div class="table-container__controls">
         <ElButton type="primary" @click="() => openLoad()">Добавить</ElButton>
         <ElButton type="primary" @click="() => openMoreLoad()">Массовая загрузка</ElButton>
-        <ElButton type="danger" @click="() => deleteAll()">Удалить все</ElButton>
+        <ElButton type="danger" @click="() => handleDeleteAll()">Удалить все</ElButton>
         <ElButton type="danger" @click="() => logout()">Выход</ElButton>
 
         <ElDialog
@@ -59,37 +59,91 @@
         </ElDialog>
       </div>
 
-      <ElTable class="table-container__table" :data="paginatedData" @row-click="(row) => openModal(row)">
-        <ElTableColumn label="Пациент" prop="patient"/>
+      <ElTable 
+        class="table-container__table" 
+        :data="data" 
+        :row-class-name="getRowClassName"
+        @row-click="(row) => openModal(row)"
+      >
+        <!-- Колонка автора для админов и модераторов -->
+        <ElTableColumn 
+          v-if="userRole === 'admin' || userRole === 'moderator'"
+          label="Автор" 
+          prop="author"
+          width="150"
+          align="center"
+        >
+          <template #default="{ row }">
+            <span v-if="row.author">{{ row.author }}</span>
+            <span v-else class="unknown-author">Неизвестно</span>
+          </template>
+        </ElTableColumn>
+
+        <ElTableColumn label="Пациент" prop="patient">
+          <template #default="{ row }">
+            <div class="patient-cell">
+              <span :class="{ 'deleted-patient': row.is_deleted }">
+                {{ row.patient }}
+              </span>
+              <ElTag v-if="row.is_deleted" type="danger" size="mini" class="deleted-tag">
+                Удалено
+              </ElTag>
+            </div>
+          </template>
+        </ElTableColumn>
+        
         <ElTableColumn label="Изображение" width="140" align="center">
           <template #default="{ row }">
-            <img
-              class="table-container__table--preview-image"
-              :src="row.image"
-              alt="Предпросмотр"
-            />
+            <div class="image-cell">
+              <img
+                class="table-container__table--preview-image"
+                :class="{ 'deleted-image': row.is_deleted }"
+                :src="row.image"
+                alt="Предпросмотр"
+              />
+              <div v-if="row.is_deleted" class="image-overlay">
+                <i class="el-icon-delete"></i>
+              </div>
+            </div>
           </template>
         </ElTableColumn>
+        
         <ElTableColumn label="Дата и время загрузки" prop="date" width="220" align="center"/>
+        
         <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)">
           <template #default="{ row }">
-            <span>{{ formatModelsAndResult(row) }}</span>
-            <i v-if="row.ensemble === row.diagnosis" class="table-container__result-check el-icon-check"></i>
+            <span :class="{ 'deleted-text': row.is_deleted }">
+              {{ formatModelsAndResult(row) }}
+            </span>
+            <i v-if="row.ensemble === row.diagnosis && !row.is_deleted" class="table-container__result-check el-icon-check"></i>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="Действия" class="table-container__actions" width="100">
+        
+        <ElTableColumn label="Действия" class="table-container__actions" width="180">
           <template #default="{ row }">
-            <ElButton
-              type="danger"
-              size="mini"
-              @click.stop="() => deleteItem(row.id)"
-            >
-              Удалить
-            </ElButton>
+            <div class="action-buttons">
+              <ElButton
+                type="danger"
+                size="mini"
+                @click.stop="() => handleDeleteItem(row)"
+                :disabled="row.is_deleted && userRole === 'regular'"
+              >
+                {{ getDeleteButtonText(row) }}
+              </ElButton>
+            </div>
           </template>
         </ElTableColumn>
+        
         <template #empty>
-          <p>Нет данных для отображения. Таблица пустая.</p>
+          <div class="empty-table">
+            <p>Нет данных для отображения.</p>
+            <p v-if="showFilter === 'deleted'" class="empty-hint">
+              Нет удаленных записей
+            </p>
+            <p v-else class="empty-hint">
+              Таблица пустая. Добавьте новые анализы.
+            </p>
+          </div>
         </template>
       </ElTable>
 
@@ -135,6 +189,12 @@
           <p>Загрузка изображения...</p>
         </div>
         <div class="modal-fields">
+          <!-- Информация об авторе для админов и модераторов -->
+          <div v-if="(userRole === 'admin' || userRole === 'moderator') && selectedRow.author" class="field">
+            <span class="field-label">Автор:</span>
+            <span class="field-value">{{ selectedRow.author }}</span>
+          </div>
+
           <div class="field">
             <span class="field-label">Пациент:</span>
             <span class="field-value">{{ selectedRow.patient }}</span>
@@ -149,14 +209,21 @@
             <span class="field-label">Диагноз:</span>
             <span class="field-value">{{ getDiagnosisLabel(selectedRow.diagnosis) }}</span>
 
-            <i v-if="selectedRow.diagnosis === selectedRow.ensemble" class="table-container__result-check el-icon-check"></i>
+            <i v-if="selectedRow.diagnosis === selectedRow.ensemble && !selectedRow.is_deleted" class="table-container__result-check el-icon-check"></i>
+          </div>
+
+          <!-- Статус удаления -->
+          <div v-if="selectedRow.is_deleted" class="field">
+            <span class="field-label">Статус:</span>
+            <ElTag type="danger" size="small">Удалено</ElTag>
           </div>
         </div>
         <div slot="footer">
-          <ElButton @click="() => openEditModal()">Редактировать</ElButton>
+          <ElButton @click="() => openEditModal()" :disabled="selectedRow.is_deleted">Редактировать</ElButton>
           <ElButton @click="() => closeModal()">Закрыть</ElButton>
         </div>
       </ElDialog>
+      
       <ElDialog
         :visible.sync="isEditModalVisible"
         title="Редактирование записи"
@@ -186,24 +253,12 @@
         </span>
       </ElDialog>
     </div>
-    <div class="animated-container__pagination-container">
-      <div class="pagination-container__pagination">
-        <ElPagination
-          layout="prev, pager, next"
-          :current-page="currentPage"
-          :page-size="itemsPerPage"
-          :total="data.length"
-          @current-change="(page)=>changePage(page)">
-        </ElPagination>
-      </div>
-    </div>
   </div>
 </template>
 
 <script>
 import VueDropzone from 'vue2-dropzone';
 import { mapActions } from 'vuex';
-import { MessageBox } from 'element-ui';
 import { AUTH_TOKEN } from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
@@ -229,11 +284,18 @@ export default {
       type: Array,
       required: true,
     },
+    userRole: {
+      type: String,
+      default: 'regular'
+    },
+    showFilter: {
+      type: String,
+      default: 'active'
+    }
   },
   data () {
     return {
       selectedRow: null,
-      currentPage: 1,
       description: '',
 
       dropzoneImageOptions: {
@@ -261,7 +323,6 @@ export default {
 
       isDownloadModalVisible: false,
       isDownloadImagesModalVisible: false,
-      itemsPerPage: 10,
       loading: false,
       uploadedFiles: [],
       isEditModalVisible: false,
@@ -275,11 +336,6 @@ export default {
   computed: {
     isSelected () {
       return !!this.selectedRow
-    },
-    paginatedData () {
-      const start = (this.currentPage - 1) * this.itemsPerPage;
-      const end = start + this.itemsPerPage;
-      return this.data.slice(start, end);
     },
     listObj () {
       return list
@@ -317,8 +373,30 @@ export default {
       'updateRecord'
     ]),
 
+    getRowClassName({ row }) {
+      if (row.is_deleted) {
+        return 'deleted-row';
+      }
+      return '';
+    },
+
+    getDeleteButtonText(row) {
+      if (row.is_deleted) {
+        return 'Удалить навсегда';
+      }
+      return 'Удалить';
+    },
+
+    handleDeleteItem(row) {
+      this.$emit('delete-item', row);
+    },
+
+    handleDeleteAll() {
+      this.$emit('delete-all');
+    },
+
     logout () {
-      MessageBox.confirm(
+      this.$confirm(
         'Вы уверены, что хотите выйти?',
         'Подтверждение выхода',
         {
@@ -335,53 +413,19 @@ export default {
           console.log("Выход отменён")
         });
     },
+    
     formatModelsAndResult (row) {
       return `${ row.model_1 } / ${ row.model_2 } / ${ row.model_3 } (${ this.diagnosisLabels[row.ensemble] })`;
     },
-    changePage (page) {
-      this.currentPage = page;
-    },
-    deleteItem (id) {
-      MessageBox.confirm(
-        'Вы уверены, что хотите удалить этот элемент?',
-        'Подтверждение удаления',
-        {
-          confirmButtonText: 'Да',
-          cancelButtonText: 'Нет',
-          type: 'warning',
-        }
-      )
-        .then(() => {
-          this.removeData(id)
-        })
-        .catch(() => {
-          console.log('Удаление отменено.');
-        });
-    },
-    deleteAll () {
-      MessageBox.confirm(
-        'Вы уверены, что хотите удалить все?',
-        'Подтверждение удаления',
-        {
-          confirmButtonText: 'Да',
-          cancelButtonText: 'Нет',
-          type: 'warning',
-        }
-      )
-        .then(() => {
-          console.log("Удаление подтверждено.");
-          this.removeAllData();
-        })
-        .catch(() => {
-          this.$message.info('Удаление отменено.');
-        });
-    },
+    
     openLoad () {
       this.isDownloadModalVisible = true;
     },
+    
     openMoreLoad () {
       this.isDownloadImagesModalVisible = true;
     },
+    
     handleFileAdded: function (file) {
       console.log('Файл добавлен:', file);
 
@@ -403,7 +447,6 @@ export default {
         }
       }
 
-
       setTimeout(() => {
         const successMarks = document.querySelectorAll('.dz-success-mark');
         const errorMarks = document.querySelectorAll('.dz-error-mark');
@@ -411,6 +454,7 @@ export default {
         errorMarks.forEach(mark => mark.remove());
       }, 0);
     },
+    
     handleSubmits () {
       if (this.uploadedFiles.length === 0) {
         this.$message.error('Пожалуйста, загрузите изображения.');
@@ -430,6 +474,7 @@ export default {
         description: this.formData.description
       }).then(() => {
         this.$message.success('Данные успешно отправлены и обработаны!');
+        this.$emit('refresh');
       })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
@@ -438,7 +483,6 @@ export default {
         .finally(() => {
           this.loading = false;
         });
-
 
       this.isDownloadImagesModalVisible = false;
       if (this.uploadedFiles.length > 1) {
@@ -452,6 +496,7 @@ export default {
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
+    
     handleSubmit () {
       console.log('Данные, полученные из формы:');
       console.log('Файл:', this.uploadedFiles[0]);
@@ -477,6 +522,7 @@ export default {
       })
         .then(() => {
           this.$message.success('Данные успешно отправлены и обработаны!');
+          this.$emit('refresh');
         })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
@@ -498,6 +544,7 @@ export default {
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
+    
     closeDownloadModal () {
       this.isDownloadModalVisible = false;
       this.isDownloadImagesModalVisible = false;
@@ -505,14 +552,17 @@ export default {
       this.formData = [];
       this.$refs.myDropzone.removeAllFiles();
     },
+    
     openModal (row) {
       this.selectedRow = {
         ...row,
       }
     },
+    
     closeModal () {
       this.selectedRow = null;
     },
+    
     openEditModal () {
       this.isEditModalVisible = true;
       this.editForm.id = this.selectedRow.id;
@@ -521,9 +571,11 @@ export default {
 
       this.closeModal();
     },
+    
     closeEditModal () {
       this.isEditModalVisible = false;
     },
+    
     submitEdit () {
       if (!this.editForm.description || !this.editForm.diagnosis) {
         this.$message.error('Пожалуйста, заполните все поля.');
@@ -533,6 +585,7 @@ export default {
       this.updateRecord(this.editForm)
         .then(() => {
           this.$message.success('Запись успешно обновлена!');
+          this.$emit('refresh');
 
           this.description = this.editForm.description;
           this.diagnosis = this.editForm.diagnosis;
@@ -549,6 +602,7 @@ export default {
           this.$message.error('Ошибка при обновлении записи.');
         });
     },
+    
     getDiagnosisLabel (value) {
       const option = this.diagnosisOptions.find(option => option.value === value);
       return option ? option.label : value;
@@ -556,7 +610,6 @@ export default {
   },
 };
 </script>
-
 
 <style lang="less">
 .modal-fields {
@@ -571,6 +624,7 @@ export default {
       font-weight: bold;
       margin-right: 5px;
       display: inline-block;
+      min-width: 120px;
     }
 
     .field-value {
@@ -598,16 +652,6 @@ img {
   object-fit: contain;
 }
 
-.animated-container__pagination-container {
-
-  &__pagination {
-    display: flex;
-    justify-content: center;
-    text-align: center;
-    margin-top: 20px;
-  }
-}
-
 .table-container {
   margin: 20px;
 
@@ -627,6 +671,19 @@ img {
   &__table {
     width: 100%;
 
+    // Стили для удаленных строк
+    .deleted-row {
+      background-color: #fafafa !important;
+      
+      td {
+        color: #999 !important;
+      }
+      
+      &:hover > td {
+        background-color: #f5f5f5 !important;
+      }
+    }
+
     &--preview-image {
       width: 50px;
       height: 50px;
@@ -634,6 +691,11 @@ img {
       border: 1px solid #ddd;
       padding: 2px;
       border-radius: 4px;
+      
+      &.deleted-image {
+        opacity: 0.6;
+        filter: grayscale(50%);
+      }
     }
   }
 
@@ -683,4 +745,107 @@ img {
   }
 }
 
+// Стили для ячеек с удаленными записями
+.patient-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .deleted-patient {
+    color: #999;
+    text-decoration: line-through;
+  }
+  
+  .deleted-tag {
+    margin-left: 4px;
+  }
+}
+
+.image-cell {
+  position: relative;
+  display: inline-block;
+  
+  .image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    
+    i {
+      color: white;
+      font-size: 20px;
+    }
+  }
+}
+
+.deleted-text {
+  color: #999;
+}
+
+.unknown-author {
+  color: #999;
+  font-style: italic;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.empty-table {
+  text-align: center;
+  padding: 40px 0;
+  
+  .empty-hint {
+    color: #909399;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+}
+
+// Адаптивность
+// @media (max-width: 768px) {
+//   .table-container {
+//     margin: 10px;
+    
+//     &__controls {
+//       flex-direction: column;
+//       align-items: stretch;
+      
+//       .el-button {
+//         margin-bottom: 8px;
+        
+//         &:last-child {
+//           margin-bottom: 0;
+//         }
+//       }
+//     }
+    
+//     &__table {
+//       .el-table__header-wrapper,
+//       .el-table__body-wrapper {
+//         overflow-x: auto;
+//       }
+//     }
+//   }
+  
+//   .action-buttons {
+//     flex-direction: column;
+    
+//     .el-button {
+//       margin-bottom: 4px;
+      
+//       &:last-child {
+//         margin-bottom: 0;
+//       }
+//     }
+//   }
+// }
 </style>

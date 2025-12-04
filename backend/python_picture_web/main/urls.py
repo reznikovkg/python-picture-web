@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 urlpatterns = [
@@ -9,5 +9,6 @@ urlpatterns = [
     path('cnn_table/<str:key>/delete_all', views.delete_all),
     path('cnn_table/<str:key>/update', views.update_analyse, name='update_analyse'),
     path('classification-image/<str:key>', views.classification_image, name="classification_image"),
-    path('classification-images/<str:key>', views.classification_images, name="classification_images")
+    path('classification-images/<str:key>', views.classification_images, name="classification_images"),
+    path('', include('users.urls')),
 ]

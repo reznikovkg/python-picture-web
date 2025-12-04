@@ -17,7 +17,16 @@ export default {
     ROUTES (){
       return ROUTES
     },
-    ...mapGetters('auth', ['getUserRole', 'getUserToken'])
+    ...mapGetters('auth', ['getUserRole', 'getUserToken', 'getUserLogin']),
+    userRole() {
+      return this.getUserRole;
+    },
+    userToken() {
+      return this.getUserToken;
+    },
+    userLogin() {
+      return this.getUserLogin;
+    }
   },
   mounted () {
     document.title = 'Распознавание'
@@ -28,6 +37,8 @@ export default {
 
 }
 </script>
+
+<!-- Подумать над стилями -->
 
 <style lang="less">
 body {
