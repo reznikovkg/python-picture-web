@@ -10,6 +10,6 @@ export default new Vuex.Store({
     modules: {
         table,
         auth,
-        users, // модуль для управления пользователями
+        users,
     },
 });

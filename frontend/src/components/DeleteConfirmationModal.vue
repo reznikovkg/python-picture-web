@@ -14,7 +14,7 @@
         <div class="message">
           <p class="confirmation-text">{{ getMessage }}</p>
           
-          <!-- Дополнительная информация для админов/модераторов -->
+          <!-- Дополнительная информация для администраторов/модераторов -->
           <div v-if="showAdvancedOptions" class="advanced-info">
             <ElAlert
               v-if="item && item.is_deleted"
@@ -50,7 +50,7 @@
           Да, удалить
         </ElButton>
         
-        <!-- Для админов/модераторов - две кнопки удаления -->
+        <!-- Для администраторов/модераторов - две кнопки удаления -->
         <div v-else class="admin-buttons">
           <div class="button-with-hint">
             <ElButton 
@@ -162,7 +162,7 @@ export default {
   watch: {
     visible(newVal) {
       if (newVal) {
-        // Сбрасываем состояние при открытии
+        // сброс состояния при открытии
         this.deleteType = 'soft'
       }
     }
@@ -188,11 +188,11 @@ export default {
     
     handleClose(done) {
       if (this.loading) {
-        return // Не закрываем если идет загрузка
+        return // не закрывается если идет загрузка
       }
       this.$emit('cancel')
       if (done) {
-        done() // Закрываем диалог
+        done() // конец диалога
       }
     }
   }
@@ -292,7 +292,7 @@ export default {
   }
 }
 
-// Стили для состояний загрузки
+// стили для состояний загрузки
 :deep(.el-button) {
   &.is-loading {
     opacity: 0.7;

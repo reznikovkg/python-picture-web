@@ -14,16 +14,16 @@ const state = {
     filters: {
         page: 1,
         page_size: 10,
-        show: 'active' // all, active, deleted
+        show: 'active' // all, active, deleted (показ всех анализов, неудалённых и удалённых)
     }
 };
 
 const mutations = {
     SET_TABLE_DATA(state, data) {
-        // Сохраняем results в tableData
+        // сохранение results в tableData
         state.tableData = data.results || [];
         
-        // Сохраняем пагинацию если она есть в ответе
+        // сохранение пагинации (если она есть в ответе)
         if (data.pagination) {
             state.pagination = {
                 current_page: data.pagination.current_page || 1,
@@ -56,7 +56,7 @@ const actions = {
         commit('SET_LOADING', true);
         commit('CLEAR_ERROR');
         
-        // Обновляем фильтры
+        // обновление фильтров
         if (Object.keys(filters).length > 0) {
             commit('SET_FILTERS', filters);
         }
@@ -64,7 +64,7 @@ const actions = {
         const currentFilters = { ...state.filters, ...filters };
         const authToken = rootGetters['auth/getUserToken'];
         
-        // Строим параметры запроса
+        // параметры запроса
         const params = {
             page: currentFilters.page,
             page_size: currentFilters.page_size,
@@ -84,7 +84,7 @@ const actions = {
                 const errorMessage = error.response?.data?.message || error.message || 'Ошибка при получении данных';
                 commit('SET_ERROR', errorMessage);
                 
-                // Показываем уведомление об ошибке
+                // уведомление об ошибке
                 if (error.response?.status === 403) {
                     throw new Error('Доступ запрещен.');
                 } else if (error.response?.status === 404) {
@@ -111,7 +111,7 @@ const actions = {
         return axiosInstance.post(`/back/classification-image/${authToken}`, formData)
             .then(response => {
                 if (response.data && response.data.success !== false) {
-                    // После успешного создания перезагружаем данные с текущими фильтрами
+                    // после успешного создания перезагрузка данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
                         return response.data;
                     });
@@ -123,7 +123,7 @@ const actions = {
                 const errorMessage = error.response?.data?.message || error.message || 'Ошибка при загрузке изображения';
                 commit('SET_ERROR', errorMessage);
                 
-                // Более детальные сообщения об ошибках
+                // более детальные сообщения об ошибках
                 if (error.response?.status === 403) {
                     throw new Error('Доступ запрещен. Проверьте права пользователя.');
                 } else if (error.response?.status === 404) {
@@ -185,14 +185,14 @@ const actions = {
         return Promise.all(batchPromises)
             .then(() => {
                 console.log('Все батчи успешно отправлены');
-                // После успешной загрузки перезагружаем данные с текущими фильтрами
+                // после успешной загрузки перезагрузка данных с текущими фильтрами
                 return dispatch('fetchData');
             })
             .catch(error => {
                 const errorMessage = error.response?.data?.message || error.message || 'Ошибка при отправке данных';
                 commit('SET_ERROR', errorMessage);
                 
-                // Более детальные сообщения об ошибках
+                // более детальные сообщения об ошибках
                 if (error.response?.status === 403) {
                     throw new Error('Доступ запрещен. Проверьте права пользователя.');
                 } else if (error.response?.status === 404) {
@@ -222,7 +222,7 @@ const actions = {
         return axiosInstance.get(`/cnn_table/${authToken}/delete`, { params })
             .then(response => {
                 if (response.data === true || response.status === 200) {
-                    // После успешного удаления перезагружаем данные с текущими фильтрами
+                    // после успешного удаления перезагрука данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
                         return true;
                     });
@@ -261,7 +261,7 @@ const actions = {
         return axiosInstance.get(`/cnn_table/${authToken}/delete_all`, { params })
             .then(response => {
                 if (response.data === true || response.status === 200) {
-                    // После успешного удаления перезагружаем данные с текущими фильтрами
+                    // после успешного удаления перезагрузка данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
                         return true;
                     });
@@ -293,7 +293,7 @@ const actions = {
         return axiosInstance.post(`/cnn_table/${authToken}/update`, payload)
             .then(response => {
                 if (response.data.success) {
-                    // После успешного обновления перезагружаем данные с текущими фильтрами
+                    // после успешного удаления перезагрузка данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
                         return response.data;
                     });
@@ -328,7 +328,7 @@ const actions = {
 };
 
 const getters = {
-    // Возвращаем объект с results и pagination для совместимости с существующим кодом
+    // возвращение объекта с results и pagination для совместимости с существующим кодом
     getTableData: (state) => ({
         results: state.tableData || [],
         pagination: state.pagination
@@ -338,7 +338,7 @@ const getters = {
     getPagination: (state) => state.pagination,
     getFilters: (state) => state.filters,
     
-    // Геттер для получения отфильтрованных данных (если нужно на фронтенде)
+    // геттер для получения отфильтрованных данных (если нужно на фронтенде)
     getFilteredData: (state) => {
         if (state.filters.show === 'all') {
             return state.tableData;
@@ -350,7 +350,7 @@ const getters = {
         return state.tableData;
     },
     
-    // Геттер для статистики
+    // геттер для статистики
     getStats: (state) => {
         const total = state.tableData.length;
         const active = state.tableData.filter(item => !item.is_deleted).length;

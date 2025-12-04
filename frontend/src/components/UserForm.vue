@@ -109,7 +109,7 @@ export default {
     }
   },
   data() {
-    // Валидация пароля: обязателен только при создании
+    // валидация пароля (обязательна только при создании)
     const validatePassword = (rule, value, callback) => {
       if (!this.isEditing && !value) {
         callback(new Error('Пароль обязателен'))
@@ -163,13 +163,13 @@ export default {
         if (newUser) {
           this.form = {
             login: newUser.login || '',
-            password: '', // При редактировании пароль не заполняем по умолчанию
+            password: '', // при редактировании пароль не заполняем по умолчанию
             email: newUser.email || '',
             role: newUser.role || 'regular',
-            authorization: newUser.authorization !== false // По умолчанию true
+            authorization: newUser.authorization !== false // по умолчанию true
           }
         } else {
-          // Сброс формы для создания
+          // сброс формы для создания
           this.form = {
             login: '',
             password: '',
@@ -197,15 +197,15 @@ export default {
       this.loading = true
       
       try {
-        // Подготавливаем данные для отправки
+        // подготовка данные для отправки
         const formData = { ...this.form }
         
-        // Если при редактировании пароль не указан, не отправляем его
+        // если при редактировании пароль не указан, не отправить его
         if (this.isEditing && !formData.password) {
           delete formData.password
         }
 
-        // Эмитируем событие с данными формы
+        // эмитация события с данными формы
         this.$emit('submit', formData)
       } catch (error) {
         console.error('Form submission error:', error)
@@ -220,7 +220,7 @@ export default {
       this.$emit('cancel')
     },
 
-    // Метод для сброса формы извне
+    // метод для сброса формы извне
     resetForm() {
       this.$refs.userForm.resetFields()
     }
@@ -255,43 +255,14 @@ export default {
   }
 }
 
-// Адаптивность для мобильных устройств
-// @media (max-width: 768px) {
-//   .user-form {
-//     :deep(.el-form-item) {
-//       margin-bottom: 20px;
-//     }
-    
-//     :deep(.el-form-item__label) {
-//       line-height: 1.4;
-//       padding-bottom: 4px;
-//     }
-    
-//     .form-actions {
-//       :deep(.el-form-item__content) {
-//         flex-direction: column;
-        
-//         .el-button {
-//           width: 100%;
-//           margin-bottom: 8px;
-          
-//           &:last-child {
-//             margin-bottom: 0;
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
-
-// Стили для состояний загрузки
+// стили для состояний загрузки
 :deep(.el-button--primary) {
   &.is-loading {
     opacity: 0.7;
   }
 }
 
-// Улучшение читаемости для длинных текстов
+// улучшение читаемости для длинных текстов
 :deep(.el-form-item__label) {
   white-space: normal;
   word-break: break-word;

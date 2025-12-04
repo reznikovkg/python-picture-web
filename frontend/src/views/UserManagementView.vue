@@ -146,7 +146,7 @@ export default {
     }
   },
   mounted() {
-    // Проверяем права доступа
+    // проверка прав доступа
     if (!this.isAdmin) {
       this.$message.error('Доступ запрещен. Требуются права администратора.')
       this.$router.push(ROUTES.LIST)
@@ -369,7 +369,7 @@ export default {
   margin: 0 auto;
 }
 
-// жесткое переопределение стилей Element UI, иначе некорректно отображаются
+// жесткое переопределение стилей Element UI (иначе некорректно отображаются - поинтересоваться можно ли иначе)
 :deep(.action-buttons .el-button) {
   width: 100% !important;
   min-width: 0 !important;

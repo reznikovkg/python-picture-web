@@ -15,7 +15,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 from image_classifier.main.run import MainImageClassifierBySkinLesion
-# Create your views here.
+
 def check_user_access(user, analyse=None):
     """Проверка прав доступа пользователя к анализу"""
     if user.role in ['admin', 'moderator']:

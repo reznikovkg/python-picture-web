@@ -809,43 +809,4 @@ img {
     margin-top: 8px;
   }
 }
-
-// Адаптивность
-// @media (max-width: 768px) {
-//   .table-container {
-//     margin: 10px;
-    
-//     &__controls {
-//       flex-direction: column;
-//       align-items: stretch;
-      
-//       .el-button {
-//         margin-bottom: 8px;
-        
-//         &:last-child {
-//           margin-bottom: 0;
-//         }
-//       }
-//     }
-    
-//     &__table {
-//       .el-table__header-wrapper,
-//       .el-table__body-wrapper {
-//         overflow-x: auto;
-//       }
-//     }
-//   }
-  
-//   .action-buttons {
-//     flex-direction: column;
-    
-//     .el-button {
-//       margin-bottom: 4px;
-      
-//       &:last-child {
-//         margin-bottom: 0;
-//       }
-//     }
-//   }
-// }
 </style>

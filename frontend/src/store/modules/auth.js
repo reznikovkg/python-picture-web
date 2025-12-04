@@ -88,7 +88,7 @@ const actions = {
           commit('SET_USER_ROLE', userData.role || '');
           commit('SET_USER_ID', userData.id || null);
           
-          // Обновляем localStorage
+          // обновление localStorage
           localStorage.setItem('userLogin', userData.login || '');
           localStorage.setItem('userEmail', userData.email || '');
           localStorage.setItem('userRole', userData.role || '');
@@ -113,7 +113,7 @@ const actions = {
     localStorage.removeItem('userEmail');
     localStorage.removeItem('userId');
     
-    // Возвращаем промис для совместимости
+    // возвращение промис для совместимости
     return Promise.resolve();
   },
 
@@ -132,7 +132,7 @@ const actions = {
       commit('SET_USER_ID', userId ? parseInt(userId) : null);
     }
     
-    // Возвращаем промис для совместимости
+    // возвращение промис для совместимости
     return Promise.resolve();
   },
 
@@ -141,13 +141,13 @@ const actions = {
     commit('SET_USER_TOKEN', 'test-token-admin');
     commit('SET_USER_LOGIN', 'test-admin');
     commit('SET_USER_EMAIL', 'admin@test.com');
-    // Также обновляем localStorage для сохранения состояния
+    // обновление localStorage для сохранения состояния
     localStorage.setItem('userRole', 'admin');
     localStorage.setItem('authToken', 'test-token-admin');
     localStorage.setItem('userLogin', 'test-admin');
     localStorage.setItem('userEmail', 'admin@test.com');
     
-    // Возвращаем промис для совместимости
+    // возвращение промис для совместимости
     return Promise.resolve();
   },
 
@@ -156,13 +156,13 @@ const actions = {
     commit('SET_USER_TOKEN', 'test-token-regular');
     commit('SET_USER_LOGIN', 'test-user');
     commit('SET_USER_EMAIL', 'user@test.com');
-    // Также обновляем localStorage для сохранения состояния
+    // обновление localStorage для сохранения состояния
     localStorage.setItem('userRole', 'regular');
     localStorage.setItem('authToken', 'test-token-regular');
     localStorage.setItem('userLogin', 'test-user');
     localStorage.setItem('userEmail', 'user@test.com');
     
-    // Возвращаем промис для совместимости
+    // возвращение промис для совместимости
     return Promise.resolve();
   }
 };
@@ -177,7 +177,7 @@ const getters = {
   isModerator: (state) => state.userRole === 'moderator',
   isRegular: (state) => state.userRole === 'regular',
   isAuthenticated: (state) => !!state.userToken,
-  // Геттер для полной информации о пользователе
+  // геттер для полной информации о пользователе
   getCurrentUser: (state) => ({
     id: state.userId,
     login: state.userLogin,

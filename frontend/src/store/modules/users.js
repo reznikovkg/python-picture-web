@@ -55,7 +55,7 @@ const actions = {
       .catch(error => {
         console.error('Error in fetchUsers:', error);
         
-        // Подробное логирование ошибки
+        // логирование ошибки
         if (error.response) {
           console.error('Response status:', error.response.status);
           console.error('Response data:', error.response.data);
@@ -64,7 +64,7 @@ const actions = {
         const errorMessage = error.response?.data?.error || error.message || 'Ошибка при загрузке пользователей';
         commit('SET_ERROR', errorMessage);
         
-        // Более детальные сообщения об ошибках
+        // сообщения об ошибках
         if (error.response?.status === 403) {
           throw new Error('Доступ запрещен. Требуются права администратора.');
         } else if (error.response?.status === 404) {
