@@ -68,6 +68,22 @@
       @refresh="refreshData"
     />
 
+    <!-- Пагинация -->
+    <div v-if="pagination && pagination.total_pages > 1" class="pagination-container">
+      <ElPagination
+        :current-page.sync="currentPage"
+        :page-size="pageSize"
+        :total="pagination.total_count"
+        :page-sizes="[5, 10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        @size-change="handleSizeChange"
+        @current-change="handlePageChange"
+        background
+        class="pagination"
+        :locale="paginationLocale"
+      />
+    </div>
+
     <!-- Модальное окно подтверждения удаления -->
     <DeleteConfirmationModal
       :visible="deleteModalVisible"
@@ -166,6 +182,11 @@ export default {
     }
   },
   created() {
+    // восстанавление текущей страницы из параметров URL
+    const pageFromUrl = parseInt(this.$route.query.page);
+    if (pageFromUrl && pageFromUrl > 0) {
+      this.currentPage = pageFromUrl;
+    }
     this.loadData();
   },
   methods: {
@@ -178,7 +199,8 @@ export default {
         show: this.showFilter
       })
       .then(() => {
-        // Успешная загрузка
+        // обновление URL с текущей страницей
+        this.updateUrlWithPage();
       })
       .catch(error => {
         console.error('Error loading data:', error);
@@ -190,27 +212,13 @@ export default {
     },
 
     refreshData() {
-      this.loading = true;
-      
-      this.$store.dispatch('table/fetchData', {
-        page: this.currentPage,
-        page_size: this.pageSize,
-        show: this.showFilter
-      })
-      .then(() => {
-        this.$message.success('Данные обновлены');
-      })
-      .catch(error => {
-        console.error('Error loading data:', error);
-        this.$message.error('Ошибка при загрузке данных');
-      })
-      .finally(() => {
-        this.loading = false;
-      });
+      this.currentPage = 1;
+      this.loadData();
+      this.$message.success('Данные обновлены');
     },
 
     handleFilterChange() {
-      this.currentPage = 1; // Сбрасываем на первую страницу при изменении фильтра
+      this.currentPage = 1; // сброс на первую страницу при изменении фильтра
       this.loadData();
     },
 
@@ -231,7 +239,7 @@ export default {
       this.deleteLoading = true;
       
       if (isBulk) {
-        // Массовое удаление
+        // массовое удаление
         this.$store.dispatch('table/removeAllData', {
           permanent: type === 'permanent'
         })
@@ -248,7 +256,7 @@ export default {
           this.deleteLoading = false;
         });
       } else {
-        // Удаление одной записи
+        // удаление одной записи
         this.$store.dispatch('table/removeData', {
           id: item.id,
           permanent: type === 'permanent'
@@ -282,6 +290,28 @@ export default {
     handlePageChange(page) {
       this.currentPage = page;
       this.loadData();
+      // страница вверх при смене пред. страницы
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    handleSizeChange(size) {
+      this.pageSize = size;
+      this.currentPage = 1; // сброс на первую страницу при изменении размера
+      this.loadData();
+    },
+
+    updateUrlWithPage() {
+      // обновление URL без перезагрузки страницы
+      const query = { ...this.$route.query };
+      if (this.currentPage > 1) {
+        query.page = this.currentPage;
+      } else {
+        delete query.page;
+      }
+      
+      this.$router.replace({
+        query: query
+      }).catch(() => {});
     }
   }
 }
@@ -368,6 +398,20 @@ export default {
   }
 }
 
+// стили для пагинации
+.pagination-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+  text-align: center;
+  
+  .pagination {
+    display: inline-block;
+  }
+}
+
 .user-role-message {
   margin-top: 20px;
   text-align: center;
@@ -391,5 +435,4 @@ export default {
     color: #389e0d;
   }
 }
-
 </style>
