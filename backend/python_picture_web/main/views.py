@@ -293,20 +293,80 @@ def delete_all(request, key):
         try:
             user = Users.objects.get(key=key)
         except Users.DoesNotExist:
-            return HttpResponse('Пользователь с таким ключом не найден.', status=404)
+            return JsonResponse({"success": False, "message": "Пользователь с таким ключом не найден."}, status=404)
 
-        analyses = Analyse.objects.filter(user_key=user)
-        for analyse in analyses:
-            if os.path.exists('python_picture_web' + str(analyse.image.url)):
-                os.remove('python_picture_web' + str(analyse.image.url))
-                analyse.delete()
-            else:
-                return HttpResponse("Picture not found", status=404)
+        if not user.authorization:
+            return JsonResponse({"success": False, "message": "Доступ запрещен."}, status=403)
 
-        if Analyse.objects.filter(user_key=user):
-            return HttpResponse(False, status=200)
+        # параметры удаления
+        permanent = request.GET.get("permanent", "false").lower() == "true"
+        show_filter = request.GET.get("show", "active")  # возможные значения all, active, deleted
+
+        # queryset в зависимости от роли пользователя и фильтра
+        if user.role in ['admin', 'moderator']:
+            analyses = Analyse.objects.all()
         else:
-            return HttpResponse(True, status=200)
+            analyses = Analyse.objects.filter(user_key=user)
+        
+        # фильтр по статусу удаления
+        if show_filter == 'active':
+            analyses = analyses.filter(is_deleted=False)
+        elif show_filter == 'deleted':
+            analyses = analyses.filter(is_deleted=True)
+        # all - без фильтра по статусу
+        
+        count = analyses.count()
+        
+        if count == 0:
+            return JsonResponse({
+                "success": False, 
+                "message": "Нет записей для удаления."
+            }, status=400)
+        
+        # проверка прав на полное удаление
+        if permanent and user.role == 'regular':
+            return JsonResponse({
+                "success": False, 
+                "message": "Обычные пользователи не могут удалять записи навсегда."
+            }, status=403)
+        
+        # удаление записей
+        deleted_count = 0
+        if permanent:
+            # полное удаление
+            for analyse in analyses:
+                try:
+                    # удаляем файл изображения
+                    if os.path.exists('python_picture_web' + str(analyse.image.url)):
+                        os.remove('python_picture_web' + str(analyse.image.url))
+                    analyse.delete()
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"Ошибка при удалении записи {analyse.id}: {str(e)}")
+            
+            message = f"Удалено навсегда: {deleted_count} записей"
+        else:
+            # мягкое удаление (только для активных записей)
+            if show_filter == 'deleted':
+                return JsonResponse({
+                    "success": False,
+                    "message": "Для уже удаленных записей невозможно мягкое удаление."
+                }, status=400)
+            
+            # мягко удаляются только активные записи
+            active_analyses = analyses.filter(is_deleted=False)
+            deleted_count = active_analyses.count()
+            active_analyses.update(is_deleted=True)
+            
+            message = f"Помечено как удалено: {deleted_count} записей"
+        
+        return JsonResponse({
+            "success": True,
+            "message": message,
+            "count": deleted_count,
+            "permanent": permanent,
+            "show_filter": show_filter
+        })
 
     return JsonResponse({"success": False, "message": "Метод не поддерживается."}, status=405)
 

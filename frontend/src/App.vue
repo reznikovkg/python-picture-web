@@ -31,12 +31,21 @@ export default {
   mounted () {
     document.title = 'Распознавание'
   },
+  created() {
+    // инициализация пользователя при загрузке приложения через mapActions
+    this.initializeUser();
+  },
   methods: {
-    ...mapActions('auth', ['setTestAdminRole', 'setTestRegularRole'])
+    ...mapActions('auth', [
+      'setTestAdminRole', 
+      'setTestRegularRole',
+      'initializeUser'
+    ])
   }
 
 }
 </script>
+
 
 <!-- Подумать над стилями -->
 

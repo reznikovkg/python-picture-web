@@ -1,6 +1,6 @@
 <template>
-  <div class="animated-container" v-loading="loading">
-    <div class="table-container">
+  <div class="animated-container table-container" v-loading="loading">
+    <div class="table-container__content">
       <div class="table-container__controls">
         <ElButton type="primary" @click="() => openLoad()">Добавить</ElButton>
         <ElButton type="primary" @click="() => openMoreLoad()">Массовая загрузка</ElButton>
@@ -59,8 +59,9 @@
         </ElDialog>
       </div>
 
+      <!-- Таблица с классом для глобальных стилей -->
       <ElTable 
-        class="table-container__table" 
+        class="table-container__table analysis-table analysis-table--wide"
         :data="data" 
         :row-class-name="getRowClassName"
         @row-click="(row) => openModal(row)"
@@ -70,8 +71,8 @@
           v-if="userRole === 'admin' || userRole === 'moderator'"
           label="Автор" 
           prop="author"
-          width="150"
           align="center"
+          class-name="analysis-table__column analysis-table__column--author"
         >
           <template #default="{ row }">
             <span v-if="row.author">{{ row.author }}</span>
@@ -79,7 +80,11 @@
           </template>
         </ElTableColumn>
 
-        <ElTableColumn label="Пациент" prop="patient">
+        <ElTableColumn 
+          label="Пациент" 
+          prop="patient"
+          class-name="analysis-table__column analysis-table__column--patient"
+        >
           <template #default="{ row }">
             <div class="patient-cell">
               <span :class="{ 'deleted-patient': row.is_deleted }">
@@ -92,7 +97,11 @@
           </template>
         </ElTableColumn>
         
-        <ElTableColumn label="Изображение" width="140" align="center">
+        <ElTableColumn 
+          label="Изображение" 
+          align="center"
+          class-name="analysis-table__column analysis-table__column--image"
+        >
           <template #default="{ row }">
             <div class="image-cell">
               <img
@@ -108,9 +117,17 @@
           </template>
         </ElTableColumn>
         
-        <ElTableColumn label="Дата и время загрузки" prop="date" width="220" align="center"/>
+        <ElTableColumn 
+          label="Дата и время загрузки" 
+          prop="date" 
+          align="center"
+          class-name="analysis-table__column analysis-table__column--date"
+        />
         
-        <ElTableColumn label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)">
+        <ElTableColumn 
+          label="Модель 1 / Модель 2 / Модель 3 (Ансамбль)"
+          class-name="analysis-table__column analysis-table__column--models"
+        >
           <template #default="{ row }">
             <span :class="{ 'deleted-text': row.is_deleted }">
               {{ formatModelsAndResult(row) }}
@@ -119,7 +136,11 @@
           </template>
         </ElTableColumn>
         
-        <ElTableColumn label="Действия" class="table-container__actions" width="180">
+        <ElTableColumn 
+          label="Действия" 
+          class="table-container__actions" 
+          class-name="analysis-table__column analysis-table__column--actions"
+        >
           <template #default="{ row }">
             <div class="action-buttons">
               <ElButton
@@ -392,7 +413,44 @@ export default {
     },
 
     handleDeleteAll() {
-      this.$emit('delete-all');
+      if (this.userRole === 'regular') {
+        // подтверждение на мягкое удаление всех активных записей (пользователи)
+        this.$confirm(
+          `Вы уверены, что хотите удалить все ваши активные записи (${this.data.length} шт.)?`,
+          'Подтверждение удаления',
+          {
+            confirmButtonText: 'Да, удалить',
+            cancelButtonText: 'Отмена',
+            type: 'warning',
+          }
+        )
+          .then(() => {
+            this.$emit('delete-all', {
+              permanent: false,
+              show: 'active',
+              isRegularUser: true,
+              count: this.data.length
+            });
+          })
+          .catch(() => {
+            console.log("Удаление отменено");
+          });
+      } else {
+        // для администраторов и модераторов данные для модального окна с выбором
+        const filterLabels = {
+          'all': 'все записи',
+          'active': 'все активные записи',
+          'deleted': 'все удалённые записи'
+        };
+        
+        const filterLabel = filterLabels[this.showFilter] || 'записи';
+        
+        this.$emit('delete-all', {
+          showFilter: this.showFilter,
+          count: this.data.length,
+          filterLabel: filterLabel
+        });
+      }
     },
 
     logout () {
@@ -611,7 +669,119 @@ export default {
 };
 </script>
 
+<!-- Глобальные стили для таблицы (без scoped) -->
 <style lang="less">
+/* Глобальные стили для таблицы анализа */
+.analysis-table {
+  width: 100% !important;
+  
+  &--wide {
+    min-width: 1200px;
+    
+    .el-table__header-wrapper,
+    .el-table__body-wrapper {
+      table {
+        width: 100% !important;
+      }
+    }
+  }
+  
+  /* Увеличение шрифта заголовков */
+  .el-table__header {
+    th {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+      padding: 16px 10px;
+      background-color: #f5f7fa;
+      
+      .cell {
+        line-height: 1.4;
+        white-space: normal;
+        word-break: break-word;
+      }
+    }
+  }
+  
+  /* Стили для ячеек */
+  .el-table__body {
+    td {
+      padding: 12px 10px;
+      
+      .cell {
+        line-height: 1.4;
+      }
+    }
+  }
+  
+  /* Фиксированные ширины колонок */
+  &__column {
+    &--author,
+    &--patient {
+      min-width: 150px !important;
+      max-width: 200px !important;
+    }
+    
+    &--image {
+      width: 140px !important;
+      min-width: 140px !important;
+      max-width: 140px !important;
+    }
+    
+    &--date {
+      width: 220px !important;
+      min-width: 220px !important;
+      max-width: 220px !important;
+    }
+    
+    &--actions {
+      width: 180px !important;
+      min-width: 180px !important;
+      max-width: 180px !important;
+    }
+  }
+  
+  /* Стили для состояния "нет данных" */
+  .el-table__empty-block {
+    width: 100% !important;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Стили для удаленных строк (глобальные, так как используются классы из Element UI) */
+.deleted-row {
+  background-color: #fafafa !important;
+  
+  td {
+    color: #999 !important;
+  }
+  
+  &:hover > td {
+    background-color: #f5f5f5 !important;
+  }
+}
+
+/* Стили для превью изображений в таблице */
+.table-container__table--preview-image {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border: 1px solid #ddd;
+  padding: 2px;
+  border-radius: 4px;
+  
+  &.deleted-image {
+    opacity: 0.6;
+    filter: grayscale(50%);
+  }
+}
+</style>
+
+<!-- Scoped стили только для компонента -->
+<style scoped lang="less">
 .modal-fields {
   margin-top: 20px;
 
@@ -653,7 +823,13 @@ img {
 }
 
 .table-container {
-  margin: 20px;
+  margin: 0;
+  width: 100%;
+  overflow-x: auto;
+
+  &__content {
+    padding: 0;
+  }
 
   &__header {
     display: flex;
@@ -666,37 +842,8 @@ img {
     gap: 10px;
     justify-content: flex-end;
     margin-bottom: 20px;
-  }
-
-  &__table {
-    width: 100%;
-
-    // Стили для удаленных строк
-    .deleted-row {
-      background-color: #fafafa !important;
-      
-      td {
-        color: #999 !important;
-      }
-      
-      &:hover > td {
-        background-color: #f5f5f5 !important;
-      }
-    }
-
-    &--preview-image {
-      width: 50px;
-      height: 50px;
-      object-fit: cover;
-      border: 1px solid #ddd;
-      padding: 2px;
-      border-radius: 4px;
-      
-      &.deleted-image {
-        opacity: 0.6;
-        filter: grayscale(50%);
-      }
-    }
+    padding: 20px 20px 0;
+    flex-wrap: wrap;
   }
 
   &__result-check {
@@ -802,6 +949,7 @@ img {
 .empty-table {
   text-align: center;
   padding: 40px 0;
+  width: 100%;
   
   .empty-hint {
     color: #909399;

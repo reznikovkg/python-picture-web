@@ -6,13 +6,15 @@
       ref="userForm" 
       label-width="120px"
       label-position="left"
+      class="user-management-form"
     >
-      <ElFormItem label="Логин" prop="login">
+      <ElFormItem label="Логин" prop="login" class="user-form-item">
         <ElInput 
           v-model="form.login" 
           placeholder="Введите логин пользователя"
           :maxlength="32"
           show-word-limit
+          class="user-form-input"
         />
       </ElFormItem>
 
@@ -20,6 +22,7 @@
         label="Пароль" 
         prop="password"
         :required="!isEditing"
+        class="user-form-item"
       >
         <ElInput 
           v-model="form.password" 
@@ -27,23 +30,25 @@
           :placeholder="isEditing ? 'Оставьте пустым, если не нужно менять' : 'Введите пароль'"
           :maxlength="32"
           show-word-limit
+          class="user-form-input"
         />
       </ElFormItem>
 
-      <ElFormItem label="Email" prop="email">
+      <ElFormItem label="Email" prop="email" class="user-form-item">
         <ElInput 
           v-model="form.email" 
           type="email"
           placeholder="Введите email пользователя"
           :maxlength="254"
+          class="user-form-input"
         />
       </ElFormItem>
 
-      <ElFormItem label="Роль" prop="role">
+      <ElFormItem label="Роль" prop="role" class="user-form-item">
         <ElSelect 
           v-model="form.role" 
           placeholder="Выберите роль"
-          style="width: 100%"
+          class="user-form-select"
         >
           <ElOption 
             label="Модератор" 
@@ -64,13 +69,14 @@
         </div>
       </ElFormItem>
 
-      <ElFormItem label="Статус">
+      <ElFormItem label="Статус" class="user-form-item">
         <ElSwitch
           v-model="form.authorization"
           active-text="Активен"
           inactive-text="Заблокирован"
           active-color="#13ce66"
           inactive-color="#ff4949"
+          class="user-form-switch"
         />
         <div class="status-description">
           <small>
@@ -79,14 +85,15 @@
         </div>
       </ElFormItem>
 
-      <ElFormItem class="form-actions">
-        <ElButton @click="handleCancel">
+      <ElFormItem class="form-actions user-form-actions">
+        <ElButton @click="handleCancel" class="user-form-button user-form-button--cancel">
           Отмена
         </ElButton>
         <ElButton 
           type="primary" 
           @click="handleSubmit"
           :loading="loading"
+          class="user-form-button user-form-button--submit"
         >
           {{ isEditing ? 'Сохранить' : 'Создать' }}
         </ElButton>
@@ -228,7 +235,46 @@ export default {
 }
 </script>
 
-<style lang="less" scoped>
+
+<!-- Глобальные стили для элементов Element UI -->
+<style lang="less">
+/* Стили для формы управления пользователями */
+.user-management-form {
+  .user-form-item {
+    .el-form-item__label {
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.4;
+      padding-bottom: 8px;
+    }
+  }
+  
+  .user-form-input,
+  .user-form-select {
+    width: 100%;
+  }
+  
+  .user-form-switch {
+    margin-right: 10px;
+  }
+  
+  .user-form-actions {
+    .user-form-button {
+      min-width: 100px;
+      
+      &--submit {
+        &.is-loading {
+          opacity: 0.7;
+        }
+      }
+    }
+  }
+}
+</style>
+
+<!-- Попытка избавиться от deep -->
+<!-- Scoped стили (только для компонента) -->
+<style scoped lang="less">
 .user-form {
   padding: 10px 0;
 }
@@ -253,18 +299,5 @@ export default {
     justify-content: flex-end;
     gap: 12px;
   }
-}
-
-// стили для состояний загрузки
-:deep(.el-button--primary) {
-  &.is-loading {
-    opacity: 0.7;
-  }
-}
-
-// улучшение читаемости для длинных текстов
-:deep(.el-form-item__label) {
-  white-space: normal;
-  word-break: break-word;
 }
 </style>

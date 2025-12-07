@@ -52,7 +52,7 @@ const mutations = {
 };
 
 const actions = {
-    fetchData({ commit, rootGetters }, filters = {}) {
+    fetchData({ commit, rootGetters, state }, filters = {}) {
         commit('SET_LOADING', true);
         commit('CLEAR_ERROR');
         
@@ -224,7 +224,7 @@ const actions = {
                 if (response.data === true || response.status === 200) {
                     // после успешного удаления перезагрука данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
-                        return true;
+                        return { success: true, message: 'Запись успешно удалена' };
                     });
                 } else {
                     throw new Error('Ошибка при удалении данных');
@@ -247,34 +247,47 @@ const actions = {
             });
     },
 
-    removeAllData({ dispatch, commit, rootGetters }, { permanent = false } = {}) {
+    removeAllData({ dispatch, commit, rootGetters }, { permanent = false, show = 'active' } = {}) {
         commit('SET_LOADING', true);
         commit('CLEAR_ERROR');
         
         const authToken = rootGetters['auth/getUserToken'];
 
-        const params = {};
-        if (permanent) {
-            params.permanent = 'true';
-        }
+        const params = {
+            permanent: permanent ? 'true' : 'false',
+            show: show
+        };
 
         return axiosInstance.get(`/cnn_table/${authToken}/delete_all`, { params })
             .then(response => {
-                if (response.data === true || response.status === 200) {
+                console.log('Response from delete_all:', response.data);
+                
+                if (response.data && response.data.success) {
                     // после успешного удаления перезагрузка данных с текущими фильтрами
                     return dispatch('fetchData').then(() => {
-                        return true;
+                        return response.data;
                     });
                 } else {
-                    throw new Error('Ошибка при удалении всех данных');
+                    throw new Error(response.data?.message || 'Ошибка при удалении всех данных');
                 }
             })
             .catch(error => {
+                console.error('Error in removeAllData:', error);
+                
+                if (error.response) {
+                    console.error('Response status:', error.response.status);
+                    console.error('Response data:', error.response.data);
+                }
+                
                 const errorMessage = error.response?.data?.message || error.message || 'Ошибка при удалении всех данных';
                 commit('SET_ERROR', errorMessage);
                 
                 if (error.response?.status === 403) {
-                    throw new Error('Доступ запрещен.');
+                    throw new Error('Доступ запрещен. У вас недостаточно прав для выполнения этого действия.');
+                } else if (error.response?.status === 400) {
+                    throw new Error(errorMessage || 'Некорректный запрос.');
+                } else if (error.response?.status === 404) {
+                    throw new Error('Записи не найдены.');
                 } else {
                     throw new Error(errorMessage);
                 }

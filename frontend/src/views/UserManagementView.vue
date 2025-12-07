@@ -5,8 +5,7 @@
         <ElButton 
           icon="el-icon-back" 
           @click="goBack"
-          class="back-button"
-          style="margin-right: 20px;"
+          class="back-button user-management-button"
         >
           Назад
         </ElButton>
@@ -15,7 +14,7 @@
       
       <div class="user-info" v-if="currentUser">
         Текущий пользователь: <strong>{{ currentUser.login }}</strong> 
-        ({{ currentUser.role }})
+        ({{ getUserRoleLabel(currentUser.role) }})
       </div>
     </div>
 
@@ -24,83 +23,133 @@
         type="primary" 
         @click="openCreateModal"
         :disabled="loading"
+        class="user-management-button user-management-button--create"
       >
         Добавить пользователя
       </ElButton>
-      <ElButton 
-        @click="refreshUsers"
-        :disabled="loading"
-      >
-        Обновить
-      </ElButton>
     </div>
 
-    <div v-loading="loading" class="table-container">
-      <ElTable 
-        :data="users" 
-        class="users-table"
-        empty-text="Нет пользователей для отображения"
-      >
-        <ElTableColumn label="ID" prop="id" width="80" />
-        <ElTableColumn label="Логин" prop="login" />
-        <ElTableColumn label="Email" prop="email">
-          <template #default="{ row }">
-            {{ row.email || '-' }}
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="Роль" prop="role">
-          <template #default="{ row }">
-            <ElTag 
-              :type="getRoleTagType(row.role)"
-              effect="dark"
-            >
-              {{ getRoleLabel(row.role) }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="Статус" prop="authorization" width="120">
-          <template #default="{ row }">
-            <ElTag 
-              :type="row.authorization ? 'success' : 'danger'"
-              effect="light"
-            >
-              {{ row.authorization ? 'Активен' : 'Заблокирован' }}
-            </ElTag>
-          </template>
-        </ElTableColumn>
-        <ElTableColumn label="Действия" width="120" header-align="center">
-          <template #default="{ row }">
-            <div class="action-buttons">
-              <ElButton 
-                size="mini" 
-                type="primary"
-                @click="openEditModal(row)"
-                :disabled="row.id === currentUser?.id"
-                class="action-button edit-button"
+    <div class="table-wrapper">
+      <div v-loading="loading" class="table-container">
+        <ElTable 
+          :data="users" 
+          class="table-container__table analysis-table analysis-table--wide user-management-table"
+          empty-text="Нет пользователей для отображения"
+          :row-class-name="getRowClassName"
+        >
+          <ElTableColumn 
+            label="ID" 
+            prop="id" 
+            width="80"
+            class-name="analysis-table__column analysis-table__column--id"
+          />
+          <ElTableColumn 
+            label="Логин" 
+            prop="login"
+            class-name="analysis-table__column analysis-table__column--login"
+          >
+            <template #default="{ row }">
+              <div class="login-cell">
+                <span>{{ row.login }}</span>
+                <ElTag 
+                  v-if="row.id === currentUserId" 
+                  type="info" 
+                  size="mini"
+                  class="current-user-tag"
+                >
+                  Вы
+                </ElTag>
+              </div>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn 
+            label="Email" 
+            prop="email"
+            class-name="analysis-table__column analysis-table__column--email"
+          >
+            <template #default="{ row }">
+              {{ row.email || '-' }}
+            </template>
+          </ElTableColumn>
+          <ElTableColumn 
+            label="Роль" 
+            prop="role"
+            class-name="analysis-table__column analysis-table__column--role"
+          >
+            <template #default="{ row }">
+              <ElTag 
+                :type="getRoleTagType(row.role)"
+                effect="dark"
+                class="role-tag"
               >
-                Редактировать
-              </ElButton>
-              <ElButton 
-                size="mini" 
-                type="danger"
-                @click="deleteUser(row)"
-                :disabled="row.id === currentUser?.id"
-                class="action-button delete-button"
+                {{ getRoleLabel(row.role) }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn 
+            label="Статус" 
+            prop="authorization"
+            width="120"
+            class-name="analysis-table__column analysis-table__column--status"
+          >
+            <template #default="{ row }">
+              <ElTag 
+                :type="row.authorization ? 'success' : 'danger'"
+                effect="light"
+                class="status-tag"
               >
-                Удалить
-              </ElButton>
+                {{ row.authorization ? 'Активен' : 'Заблокирован' }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn 
+            label="Действия" 
+            width="150"
+            header-align="center"
+            class-name="analysis-table__column analysis-table__column--actions user-management-actions-column"
+          >
+            <template #default="{ row }">
+              <div class="action-buttons user-management-action-buttons">
+                <ElButton 
+                  size="mini" 
+                  type="primary"
+                  @click="openEditModal(row)"
+                  :disabled="row.id === currentUserId"
+                  class="action-button edit-button user-management-action-button"
+                >
+                  Редактировать
+                </ElButton>
+                <ElButton 
+                  size="mini" 
+                  type="danger"
+                  @click="deleteUser(row)"
+                  :disabled="row.id === currentUserId"
+                  class="action-button delete-button user-management-action-button"
+                >
+                  Удалить
+                </ElButton>
+              </div>
+            </template>
+          </ElTableColumn>
+          
+          <template #empty>
+            <div class="empty-table">
+              <p>Нет данных для отображения.</p>
+              <p class="empty-hint">
+                Таблица пустая. Добавьте новых пользователей.
+              </p>
             </div>
           </template>
-        </ElTableColumn>
-      </ElTable>
+        </ElTable>
+      </div>
     </div>
 
-    <!-- Модальное окно создания/редактирования пользователя -->
     <ElDialog
       :title="isEditing ? 'Редактирование пользователя' : 'Создание пользователя'"
       :visible.sync="userModalVisible"
       width="500px"
       @close="closeUserModal"
+      class="user-management-dialog"
     >
       <UserForm
         v-if="userModalVisible"
@@ -134,15 +183,19 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('auth', ['getUserRole', 'getUserToken', 'isAdmin']),
+    ...mapGetters('auth', ['getUserRole', 'getUserToken', 'isAdmin', 'getUserId']),
     ...mapState('auth', ['userLogin']),
     
     currentUser() {
       return {
         login: this.userLogin,
         role: this.getUserRole,
-        id: null
-      }
+        id: this.getUserId
+      };
+    },
+    
+    currentUserId() {
+      return this.getUserId;
     }
   },
   mounted() {
@@ -180,22 +233,6 @@ export default {
         })
     },
 
-    refreshUsers() {
-      this.loading = true
-      
-      this.$store.dispatch('users/fetchUsers')
-        .then(() => {
-          this.$message.success('Список пользователей обновлен')
-        })
-        .catch(error => {
-          console.error('Error refreshing users:', error)
-          this.$message.error(error.message || 'Ошибка при обновлении пользователей')
-        })
-        .finally(() => {
-          this.loading = false
-        })
-    },
-
     openCreateModal() {
       this.editingUser = null
       this.isEditing = false
@@ -227,6 +264,7 @@ export default {
           })
           .catch(error => {
             console.error('Error saving user:', error)
+            this.$message.error(error.message || 'Ошибка при сохранении пользователя')
           })
       } else {
         this.$store.dispatch('users/createUser', userData)
@@ -237,6 +275,7 @@ export default {
           })
           .catch(error => {
             console.error('Error creating user:', error)
+            this.$message.error(error.message || 'Ошибка при создании пользователя')
           })
       }
     },
@@ -261,6 +300,7 @@ export default {
         .catch(error => {
           if (error !== 'cancel') {
             console.error('Error deleting user:', error)
+            this.$message.error(error.message || 'Ошибка при удалении пользователя')
           }
         })
     },
@@ -273,6 +313,10 @@ export default {
       }
       return roles[role] || role
     },
+    
+    getUserRoleLabel(role) {
+      return this.getRoleLabel(role);
+    },
 
     getRoleTagType(role) {
       const types = {
@@ -281,15 +325,146 @@ export default {
         'regular': 'info'
       }
       return types[role] || 'info'
+    },
+    
+    getRowClassName({ row }) {
+      if (row.id === this.currentUserId) {
+        return 'current-user-row';
+      }
+      return '';
     }
   }
 }
 </script>
 
-<style lang="less" scoped>
+<!-- Глобальные стили для таблицы (без scoped) -->
+<style lang="less">
+  
+.user-management-table {
+  width: 100% !important;
+  
+  .el-table__header {
+    th {
+      font-size: 16px;
+      font-weight: 600;
+      color: #303133;
+      padding: 16px 10px;
+      background-color: #f5f7fa;
+      
+      .cell {
+        line-height: 1.4;
+        white-space: normal;
+        word-break: break-word;
+      }
+    }
+  }
+  
+  .el-table__body {
+    td {
+      padding: 12px 10px;
+      
+      .cell {
+        line-height: 1.4;
+      }
+    }
+  }
+
+  .analysis-table__column {
+    &--id {
+      width: 80px !important;
+      min-width: 80px !important;
+      max-width: 80px !important;
+    }
+    
+    &--login {
+      min-width: 150px !important;
+      max-width: 200px !important;
+    }
+    
+    &--email {
+      min-width: 200px !important;
+      max-width: 300px !important;
+    }
+    
+    &--role {
+      width: 150px !important;
+      min-width: 150px !important;
+      max-width: 150px !important;
+    }
+    
+    &--status {
+      width: 120px !important;
+      min-width: 120px !important;
+      max-width: 120px !important;
+    }
+    
+    &--actions {
+      width: 150px !important;
+      min-width: 150px !important;
+      max-width: 150px !important;
+    }
+  }
+  
+  .user-management-actions-column {
+    .cell {
+      padding: 8px 0 !important;
+      text-align: center !important;
+    }
+  }
+  
+  .el-table__empty-block {
+    width: 100% !important;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.current-user-row {
+  background-color: #f0f9ff !important;
+  
+  &:hover > td {
+    background-color: #e6f7ff !important;
+  }
+}
+
+.role-tag,
+.status-tag {
+  margin: 2px;
+}
+
+.current-user-tag {
+  margin-left: 8px;
+}
+
+.user-management-action-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  
+  .user-management-action-button {
+    width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 8px 5px !important;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+    display: block;
+  }
+}
+</style>
+
+<!-- Попытка избавиться от deep -->
+<!-- Scoped стили (только для компонента) -->
+<style scoped lang="less">
 .user-management {
   padding: 20px;
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -298,16 +473,24 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid #eaeaea;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
 
   .header-left {
     display: flex;
     align-items: center;
-    
+    gap: 20px;
+
     h1 {
       margin: 0;
       color: #303133;
+      font-size: 24px;
+      font-weight: 600;
+      white-space: nowrap;
     }
   }
 
@@ -323,71 +506,40 @@ export default {
   gap: 10px;
 }
 
-.table-container {
+.table-wrapper {
   background: white;
-  border-radius: 4px;
+  border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.users-table {
-  width: 100%;
-
-  .el-table__header-wrapper,
-  .el-table__body-wrapper {
-    border-radius: 4px;
-  }
-}
-
-.no-access {
-  text-align: center;
-  padding: 40px;
-  color: #909399;
-
-  .no-access-icon {
-    font-size: 48px;
-    margin-bottom: 16px;
-    color: #c0c4cc;
-  }
-
-  h2 {
-    margin: 0 0 8px 0;
-    color: #606266;
-  }
-
-  p {
-    margin: 0;
-    color: #909399;
-  }
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 5px;
-  width: 100px;
-  margin: 0 auto;
-}
-
-// жесткое переопределение стилей Element UI (иначе некорректно отображаются - поинтересоваться можно ли иначе)
-:deep(.action-buttons .el-button) {
-  width: 100% !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  padding: 8px 5px !important;
-  text-align: center;
-  white-space: nowrap;
+  margin-bottom: 20px;
   overflow: hidden;
-  text-overflow: ellipsis;
+  width: 100%;
   box-sizing: border-box;
-  display: block;
-  float: none !important;
-  clear: both !important;
 }
 
-// ликвидация всех возможных отступов и выравниваний
-:deep(.el-table__body-wrapper .el-table__row .el-table_1_column_6 .cell) {
-  padding: 8px 0 !important;
-  text-align: center !important;
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  
+  &__content {
+    padding: 0;
+  }
+}
+
+.login-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.empty-table {
+  text-align: center;
+  padding: 40px 0;
+  width: 100%;
+  
+  .empty-hint {
+    color: #909399;
+    font-size: 14px;
+    margin-top: 8px;
+  }
 }
 </style>

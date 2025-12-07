@@ -13,9 +13,5 @@ Vue.use(ElementUI, { locale })
 new Vue({
   router,
   store,
-  render: h => h(App),
-  created() {
-    // инициализация пользователя при загрузке приложения
-    this.$store.dispatch('auth/initializeUser');
-  }
+  render: h => h(App)
 }).$mount('#app')

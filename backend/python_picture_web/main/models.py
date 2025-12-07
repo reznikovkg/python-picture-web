@@ -29,3 +29,4 @@ class Analyse(models.Model):
             models.Index(fields=['is_deleted']),
             models.Index(fields=['user_key', 'is_deleted']),
         ]
+        

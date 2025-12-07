@@ -59,14 +59,16 @@
       </div>
     </div>
 
-    <TableComponent 
-      :data="tableData"
-      :user-role="userRole"
-      :show-filter="showFilter"
-      @delete-item="handleDeleteItem"
-      @delete-all="handleDeleteAll"
-      @refresh="refreshData"
-    />
+    <div class="table-wrapper">
+      <TableComponent 
+        :data="tableData"
+        :user-role="userRole"
+        :show-filter="showFilter"
+        @delete-item="handleDeleteItem"
+        @delete-all="handleDeleteAll"
+        @refresh="refreshData"
+      />
+    </div>
 
     <!-- Пагинация -->
     <div v-if="pagination && pagination.total_pages > 1" class="pagination-container">
@@ -80,7 +82,6 @@
         @current-change="handlePageChange"
         background
         class="pagination"
-        :locale="paginationLocale"
       />
     </div>
 
@@ -92,6 +93,7 @@
       :loading="deleteLoading"
       :is-bulk-delete="isBulkDelete"
       :delete-count="deleteCount"
+      :show-filter="showFilterForDelete"
       @confirm="handleDeleteConfirm"
       @cancel="closeDeleteModal"
     />
@@ -132,7 +134,9 @@ export default {
       isBulkDelete: false,
       deleteCount: 0,
       currentPage: 1,
-      pageSize: 10
+      pageSize: 10,
+      showFilterForDelete: 'active', // фильтр для массового удаления
+      isRegularUserDelete: false
     }
   },
   computed: {
@@ -179,10 +183,10 @@ export default {
         'regular': 'info'
       };
       return types[this.userRole] || 'info';
-    }
+    },
   },
   created() {
-    // восстанавление текущей страницы из параметров URL
+    // восстановление текущей страницы из параметров URL
     const pageFromUrl = parseInt(this.$route.query.page);
     if (pageFromUrl && pageFromUrl > 0) {
       this.currentPage = pageFromUrl;
@@ -225,14 +229,28 @@ export default {
     handleDeleteItem(item) {
       this.selectedItem = item;
       this.isBulkDelete = false;
+      this.isRegularUserDelete = false;
       this.deleteModalVisible = true;
     },
 
-    handleDeleteAll() {
-      this.selectedItem = null;
-      this.isBulkDelete = true;
-      this.deleteCount = this.tableData.length;
-      this.deleteModalVisible = true;
+    handleDeleteAll(params) {
+      // для пользователей простое удаление
+      if (params.isRegularUser) {
+        this.selectedItem = null;
+        this.isBulkDelete = true;
+        this.isRegularUserDelete = true;
+        this.deleteCount = params.count;
+        this.showFilterForDelete = 'active';
+        this.deleteModalVisible = true;
+      } else {
+        // для админов и модераторов удаление с учетом текущего фильтра
+        this.selectedItem = null;
+        this.isBulkDelete = true;
+        this.isRegularUserDelete = false;
+        this.deleteCount = params.count;
+        this.showFilterForDelete = params.showFilter || this.showFilter;
+        this.deleteModalVisible = true;
+      }
     },
 
     handleDeleteConfirm({ type, item, isBulk }) {
@@ -240,21 +258,40 @@ export default {
       
       if (isBulk) {
         // массовое удаление
-        this.$store.dispatch('table/removeAllData', {
-          permanent: type === 'permanent'
-        })
-        .then(() => {
-          this.$message.success('Все записи успешно удалены');
-          this.closeDeleteModal();
-          return this.loadData();
-        })
-        .catch(error => {
-          console.error('Error deleting:', error);
-          this.$message.error('Ошибка при удалении');
-        })
-        .finally(() => {
-          this.deleteLoading = false;
-        });
+        let deleteParams = {};
+        
+        if (this.userRole === 'regular' || this.isRegularUserDelete) {
+          // для пользователей только мягкое удаление
+          deleteParams = {
+            permanent: false,
+            show: 'active'
+          };
+        } else {
+          // админы и модераторы - удаление с учетом фильтра и типа
+          deleteParams = {
+            permanent: type === 'permanent',
+            show: this.showFilterForDelete
+          };
+        }
+        
+        // массовое удаление
+        this.$store.dispatch('table/removeAllData', deleteParams)
+          .then((response) => {
+            if (response.success) {
+              this.$message.success(response.message || 'Записи успешно удалены');
+            } else {
+              this.$message.error(response.message || 'Ошибка при удалении');
+            }
+            this.closeDeleteModal();
+            return this.loadData();
+          })
+          .catch(error => {
+            console.error('Error deleting:', error);
+            this.$message.error(error.message || 'Ошибка при удалении');
+          })
+          .finally(() => {
+            this.deleteLoading = false;
+          });
       } else {
         // удаление одной записи
         this.$store.dispatch('table/removeData', {
@@ -268,7 +305,7 @@ export default {
         })
         .catch(error => {
           console.error('Error deleting:', error);
-          this.$message.error('Ошибка при удалении');
+          this.$message.error(error.message || 'Ошибка при удалении');
         })
         .finally(() => {
           this.deleteLoading = false;
@@ -280,7 +317,9 @@ export default {
       this.deleteModalVisible = false;
       this.selectedItem = null;
       this.isBulkDelete = false;
+      this.isRegularUserDelete = false;
       this.deleteCount = 0;
+      this.showFilterForDelete = 'active';
     },
 
     goToUserManagement() {
@@ -290,7 +329,7 @@ export default {
     handlePageChange(page) {
       this.currentPage = page;
       this.loadData();
-      // страница вверх при смене пред. страницы
+      // прокрутка страницы вверх при смене страницы
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
 
@@ -333,6 +372,8 @@ export default {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
 
   .header-left {
     display: flex;
@@ -353,6 +394,7 @@ export default {
       color: #303133;
       font-size: 24px;
       font-weight: 600;
+      white-space: nowrap;
     }
   }
 
@@ -369,6 +411,17 @@ export default {
   }
 }
 
+// контейнер для таблицы
+.table-wrapper {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .filters {
   display: flex;
   justify-content: space-between;
@@ -378,6 +431,8 @@ export default {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
+  width: 100%;
+  box-sizing: border-box;
 
   .filter-group {
     display: flex;
@@ -406,6 +461,8 @@ export default {
   border-radius: 8px;
   box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.1);
   text-align: center;
+  width: 100%;
+  box-sizing: border-box;
   
   .pagination {
     display: inline-block;
