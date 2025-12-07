@@ -59,6 +59,7 @@
       </div>
     </div>
 
+    <!-- Контейнер для таблицы с выравниванием по ширине -->
     <div class="table-wrapper">
       <TableComponent 
         :data="tableData"
@@ -136,7 +137,8 @@ export default {
       currentPage: 1,
       pageSize: 10,
       showFilterForDelete: 'active', // фильтр для массового удаления
-      isRegularUserDelete: false
+      isRegularUserDelete: false,
+      deleteImmediateLoading: false
     }
   },
   computed: {
@@ -183,7 +185,7 @@ export default {
         'regular': 'info'
       };
       return types[this.userRole] || 'info';
-    },
+    }
   },
   created() {
     // восстановление текущей страницы из параметров URL
@@ -234,23 +236,39 @@ export default {
     },
 
     handleDeleteAll(params) {
-      // для пользователей простое удаление
-      if (params.isRegularUser) {
-        this.selectedItem = null;
-        this.isBulkDelete = true;
-        this.isRegularUserDelete = true;
-        this.deleteCount = params.count;
-        this.showFilterForDelete = 'active';
-        this.deleteModalVisible = true;
-      } else {
-        // для админов и модераторов удаление с учетом текущего фильтра
-        this.selectedItem = null;
-        this.isBulkDelete = true;
-        this.isRegularUserDelete = false;
-        this.deleteCount = params.count;
-        this.showFilterForDelete = params.showFilter || this.showFilter;
-        this.deleteModalVisible = true;
+      // если обычный пользователь, удаление происходит сразу, не открывая окно  из DeleteConfirmationModal
+      if (this.userRole === 'regular' || params.isRegularUser) {
+        this.deleteImmediateLoading = true;
+        
+        this.$store.dispatch('table/removeAllData', {
+          permanent: false,
+          show: 'active'
+        })
+        .then((response) => {
+          if (response.success) {
+            this.$message.success(response.message || 'Записи успешно удалены');
+          } else {
+            this.$message.error(response.message || 'Ошибка при удалении');
+          }
+          this.loadData();
+        })
+        .catch(error => {
+          console.error('Error deleting:', error);
+          this.$message.error(error.message || 'Ошибка при удалении');
+        })
+        .finally(() => {
+          this.deleteImmediateLoading = false;
+        });
+        return;
       }
+      
+      // для администраторов и модераторов - DeleteConfirmationModal
+      this.selectedItem = null;
+      this.isBulkDelete = true;
+      this.isRegularUserDelete = false;
+      this.deleteCount = params.count;
+      this.showFilterForDelete = params.showFilter || this.showFilter;
+      this.deleteModalVisible = true;
     },
 
     handleDeleteConfirm({ type, item, isBulk }) {
