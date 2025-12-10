@@ -40,8 +40,8 @@ export default {
       .then(() => {
         this.$router.push({ name: ROUTES.LIST });
       })
-      .catch((error) => {
-        console.error('Login error:', error);
+      .catch(() => {
+        this.error = 'Login error';
       });
     },
   },

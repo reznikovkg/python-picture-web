@@ -6,19 +6,16 @@ ROLES_CHOICES = (
     ('regular', 'Обычный пользователь'),
 )
 
-# Create your models here.
 class Users(models.Model):
     login = models.CharField('login', max_length=32)
     password = models.CharField('password', max_length=32)
     key = models.CharField('key', max_length=32)
     role = models.CharField('role', choices=ROLES_CHOICES, default='regular', max_length=10)
     authorization = models.BooleanField('authorization', default=False)
+    email = models.EmailField('email', max_length=254, blank=True, null=True)  # поле для email (null - для совместимости с текущими тестовыми данными)
+    
     class Meta:
         db_table = 'user_user'
     
     def __str__(self):
         return self.login
-
-
-#Users.objects.create(id=11, login='Maxim', password='123', key='keyMax',role='admin',authorization=True)
-

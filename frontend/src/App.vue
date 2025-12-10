@@ -17,17 +17,37 @@ export default {
     ROUTES (){
       return ROUTES
     },
-    ...mapGetters('auth', ['getUserRole', 'getUserToken'])
+    ...mapGetters('auth', ['getUserRole', 'getUserToken', 'getUserLogin']),
+    userRole() {
+      return this.getUserRole;
+    },
+    userToken() {
+      return this.getUserToken;
+    },
+    userLogin() {
+      return this.getUserLogin;
+    }
   },
   mounted () {
     document.title = 'Распознавание'
   },
+  created() {
+    // инициализация пользователя при загрузке приложения через mapActions
+    this.initializeUser();
+  },
   methods: {
-    ...mapActions('auth', ['setTestAdminRole', 'setTestRegularRole'])
+    ...mapActions('auth', [
+      'setTestAdminRole', 
+      'setTestRegularRole',
+      'initializeUser'
+    ])
   }
 
 }
 </script>
+
+
+<!-- Подумать над стилями -->
 
 <style lang="less">
 body {

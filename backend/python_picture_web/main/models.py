@@ -3,7 +3,6 @@ import logging
 from django.db import models
 from users.models import Users
 
-# Create your models here.
 class Analyse(models.Model):
     user_key = models.ForeignKey(Users, on_delete=models.CASCADE, related_name='analyses')
     image = models.ImageField(upload_to='images/', verbose_name='image')
@@ -19,6 +18,15 @@ class Analyse(models.Model):
     patient = models.CharField('patient', max_length=32, default="patient")
     description = models.TextField('description', default="Patient analyse description.")
     diagnosis = models.CharField('diagnosis', max_length=64, default="Не выбран", blank=True)
-
+    is_deleted = models.BooleanField('is_deleted', default=False)  # поле для удаления
+    
     def __str__(self):
         return f"{self.user_key.login}'s analysis ({self.datetime})"
+
+    class Meta:
+        # индекс для оптимизации запросов по is_deleted
+        indexes = [
+            models.Index(fields=['is_deleted']),
+            models.Index(fields=['user_key', 'is_deleted']),
+        ]
+        

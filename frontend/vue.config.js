@@ -14,6 +14,10 @@ module.exports = defineConfig({
         target: 'http://back:8000',
         changeOrigin: true,
       },
+      '^/users': {
+        target: 'http://back:8000',
+        changeOrigin: true,
+      },
       '/main/media/images/(.*)': {
         target: 'http://back:8000',
         changeOrigin: true,
