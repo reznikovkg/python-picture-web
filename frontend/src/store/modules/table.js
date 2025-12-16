@@ -108,6 +108,15 @@ const actions = {
         formData.append('description', description);
         formData.append('image', selectedFile);
 
+        // Логирование информации о файле
+        console.log('Отправка файла на анализ:', {
+            fileName: selectedFile.name,
+            fileType: selectedFile.type,
+            fileSize: this.formatFileSize(selectedFile.size),
+            patient: patient,
+            description: description
+        });
+
         return axiosInstance.post(`/back/classification-image/${authToken}`, formData)
             .then(response => {
                 if (response.data && response.data.success !== false) {
@@ -146,6 +155,18 @@ const actions = {
         const authToken = rootGetters['auth/getUserToken'];
         const BATCH_SIZE = 50;
         const batches = [];
+
+        // Логирование информации о файлах
+        console.log('Отправка пакета файлов на анализ:', {
+            fileCount: selectedFiles.length,
+            patient: patient,
+            description: description,
+            files: selectedFiles.map(file => ({
+                name: file.name,
+                type: file.type,
+                size: this.formatFileSize(file.size)
+            }))
+        });
 
         for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
             batches.push(selectedFiles.slice(i, i + BATCH_SIZE));
@@ -337,6 +358,15 @@ const actions = {
 
     clearError({ commit }) {
         commit('CLEAR_ERROR');
+    },
+
+    // Вспомогательная функция для форматирования размера файла
+    formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 };
 

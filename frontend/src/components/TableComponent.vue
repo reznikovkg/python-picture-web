@@ -22,18 +22,18 @@
             </ElFormItem>
             <ElFormItem>
               <vue-dropzone
-                ref="myDropzone"
-                id="dropzone"
+                ref="singleDropzone"
+                id="dropzone-single"
                 :options="dropzoneImageOptions"
-                @vdropzone-file-added="handleFileAdded"
+                @vdropzone-file-added="handleSingleFileAdded"
                 class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
-        </span>
+            <ElButton @click="closeDownloadModal">Отмена</ElButton>
+            <ElButton type="primary" @click="handleSubmit" :disabled="uploadedFiles.length === 0">Сохранить</ElButton>
+          </span>
         </ElDialog>
 
         <ElDialog
@@ -44,19 +44,29 @@
           <ElForm>
             <ElFormItem>
               <vue-dropzone
-                ref="myDropzone"
-                id="dropzone"
+                ref="multipleDropzone"
+                id="dropzone-multiple"
                 :options="dropzoneImagesOptions"
-                @vdropzone-file-added="handleFileAdded"
+                @vdropzone-file-added="handleMultipleFileAdded"
                 class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmits">Сохранить</ElButton>
-        </span>
+            <ElButton @click="closeDownloadModal">Отмена</ElButton>
+            <ElButton type="primary" @click="handleSubmits" :disabled="uploadedFiles.length === 0">Сохранить</ElButton>
+          </span>
         </ElDialog>
+
+        <!-- Модальное окно для обрезки изображения -->
+
+        <ImageCropperModal
+          :visible.sync="cropperModalVisible"
+          :image-file="imageForCropping"
+          title="Обрезка изображения (требуется формат 1:1)"
+          @confirm="handleCroppedImage"
+          @cancel="handleCropCancel"
+        />
       </div>
 
       <!-- Таблица с классом для глобальных стилей -->
@@ -284,6 +294,7 @@ import { AUTH_TOKEN } from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
 import router from "@/router";
+import ImageCropperModal from '@/components/ImageCropperModal.vue';
 
 const list = {
   AK: 'Актинический кератоз (AK)',
@@ -299,6 +310,7 @@ const list = {
 export default {
   components: {
     VueDropzone,
+    ImageCropperModal
   },
   props: {
     data: {
@@ -324,7 +336,7 @@ export default {
         autoProcessQueue: false,
         addRemoveLinks: false,
         maxFiles: 1,
-        acceptedFiles: '.jpg, .jpeg',
+        acceptedFiles: '.jpg, .jpeg, .png, .bmp',
         dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора'
       },
       dropzoneImagesOptions: {
@@ -333,7 +345,7 @@ export default {
         addRemoveLinks: false,
         previewsContainer: false,
         maxFiles: 500,
-        acceptedFiles: '.jpg, .jpeg',
+        acceptedFiles: '.jpg, .jpeg, .png, .bmp',
         dictDefaultMessage: 'Перетащите файлы сюда или нажмите для выбора'
       },
 
@@ -352,6 +364,11 @@ export default {
         description: '',
         diagnosis: '',
       },
+      
+      // Данные для обрезки изображений
+      cropperModalVisible: false,
+      imageForCropping: null,
+      currentDropzoneType: 'single' // 'single' или 'multiple'
     };
   },
   computed: {
@@ -484,13 +501,27 @@ export default {
       this.isDownloadImagesModalVisible = true;
     },
     
-    handleFileAdded: function (file) {
-      console.log('Файл добавлен:', file);
+    handleSingleFileAdded: function (file) {
+      console.log('Файл добавлен для одиночной загрузки:', file);
 
+      // Сохраняем файл для обрезки и показываем модальное окно
+      this.imageForCropping = file;
+      this.currentDropzoneType = 'single';
+      this.cropperModalVisible = true;
+      
+      // Удаляем файл из дропзона, так как будем использовать обрезанный
+      this.$refs.singleDropzone.removeFile(file);
+    },
+    
+    handleMultipleFileAdded: function (file) {
+      console.log('Файл добавлен для массовой загрузки:', file);
+      
+      // Для массовой загрузки сразу добавляем файл в uploadedFiles
       this.uploadedFiles.push(file);
 
+      // Обновляем сообщение в дропзоне
       if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
+        const dropzoneElement = this.$refs.multipleDropzone.$el;
         const messageElement = dropzoneElement.querySelector('.dz-message');
         if (messageElement) {
           messageElement.innerText = `Количество загруженных файлов: ${ this.uploadedFiles.length }`;
@@ -498,7 +529,7 @@ export default {
       }
 
       if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
+        const dropzoneElement = this.$refs.multipleDropzone.$el;
         const messageElement = dropzoneElement.querySelector('.dz-message');
         if (messageElement) {
           messageElement.innerText = '';
@@ -513,6 +544,126 @@ export default {
       }, 0);
     },
     
+    handleCroppedImage(croppedFile) {
+      if (!croppedFile) {
+        this.$message.error('Не удалось обрезать изображение');
+        return;
+      }
+      
+      console.log('Обрезанный файл получен:', croppedFile);
+      
+      // Добавляем обрезанный файл в uploadedFiles
+      this.uploadedFiles.push(croppedFile);
+      
+      // Обновляем сообщение в дропзоне (только для одиночной загрузки)
+      if (this.currentDropzoneType === 'single') {
+        const dropzoneElement = this.$refs.singleDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Файл готов к отправке';
+        }
+      }
+      
+      this.cropperModalVisible = false;
+      this.imageForCropping = null;
+    },
+    
+    handleCropCancel() {
+      console.log('Обрезка отменена');
+      this.cropperModalVisible = false;
+      this.imageForCropping = null;
+      
+      // Восстанавливаем стандартное сообщение в дропзоне
+      if (this.currentDropzoneType === 'single') {
+        const dropzoneElement = this.$refs.singleDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
+        }
+      }
+    },
+    
+    compressImageForBatch(file, quality = 0.8, maxSizeMB = 1) {
+      return new Promise(function(resolve, reject) {
+        const maxSize = maxSizeMB * 1024 * 1024; // 1 MB в байтах
+        
+        // Если файл не изображение или уже меньше maxSize, возвращаем его
+        if (!file.type.startsWith('image/') || file.size <= maxSize) {
+          resolve(file);
+          return;
+        }
+        
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        const vm = this;
+        
+        img.onload = function() {
+          URL.revokeObjectURL(url);
+          
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Сохраняем оригинальные пропорции
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          
+          // Вычисляем новые размеры, сохраняя пропорции
+          let newWidth = originalWidth;
+          let newHeight = originalHeight;
+          
+          // Если изображение слишком большое, уменьшаем его
+          const maxDimension = 2000; // Максимальный размер стороны
+          if (originalWidth > maxDimension || originalHeight > maxDimension) {
+            const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight);
+            newWidth = Math.floor(originalWidth * ratio);
+            newHeight = Math.floor(originalHeight * ratio);
+          }
+          
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          
+          // Отрисовка изображения на canvas
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          
+          // Сжатие изображения
+          canvas.toBlob(function(compressedBlob) {
+            if (compressedBlob.size <= maxSize) {
+              const compressedFile = new File(
+                [compressedBlob],
+                file.name,
+                { type: 'image/jpeg' }
+              );
+              resolve(compressedFile);
+            } else {
+              // Рекурсивное сжатие с уменьшением качества
+              if (quality > 0.1) {
+                const newQuality = quality - 0.1;
+                vm.compressImageForBatch(file, newQuality, maxSizeMB)
+                  .then(resolve)
+                  .catch(reject);
+              } else {
+                // Если не удалось сжать до нужного размера, возвращаем максимально сжатое
+                const compressedFile = new File(
+                  [compressedBlob],
+                  file.name,
+                  { type: 'image/jpeg' }
+                );
+                resolve(compressedFile);
+              }
+            }
+          }, 'image/jpeg', quality);
+        };
+        
+        img.onerror = function() {
+          URL.revokeObjectURL(url);
+          console.warn('Ошибка загрузки изображения для сжатия, возвращаем исходный файл');
+          resolve(file); // В случае ошибки возвращаем исходный файл
+        };
+        
+        img.src = url;
+      }.bind(this));
+    },
+    
     handleSubmits () {
       if (this.uploadedFiles.length === 0) {
         this.$message.error('Пожалуйста, загрузите изображения.');
@@ -525,34 +676,33 @@ export default {
       }
 
       this.loading = true;
-
-      this.predictListData({
-        selectedFiles: this.uploadedFiles,
-        patient: this.formData.patient,
-        description: this.formData.description
-      }).then(() => {
-        this.$message.success('Данные успешно отправлены и обработаны!');
-        this.$emit('refresh');
-      })
+      
+      // Сжимаем файлы, если они больше 1 МБ
+      const compressionPromises = this.uploadedFiles.map(file => {
+        return this.compressImageForBatch(file, 0.8, 1);
+      });
+      
+      Promise.all(compressionPromises)
+        .then((compressedFiles) => {
+          console.log('Файлы сжаты:', compressedFiles);
+          
+          return this.predictListData({
+            selectedFiles: compressedFiles,
+            patient: this.formData.patient,
+            description: this.formData.description
+          });
+        })
+        .then(() => {
+          this.$message.success('Данные успешно отправлены и обработаны!');
+          this.$emit('refresh');
+          this.closeDownloadModal(); // Закрываем после успешной отправки
+        })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
-          this.$message.error('Ошибка при выполнении предсказания.');
-        })
-        .finally(() => {
+          this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
           this.loading = false;
         });
 
-      this.isDownloadImagesModalVisible = false;
-      if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файлы сюда или нажмите для выбора';
-        }
-      }
-      this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
     },
     
     handleSubmit () {
@@ -581,34 +731,29 @@ export default {
         .then(() => {
           this.$message.success('Данные успешно отправлены и обработаны!');
           this.$emit('refresh');
+          this.closeDownloadModal(); // Закрываем после успешной отправки
         })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
-          this.$message.error('Ошибка при выполнении предсказания.');
-        })
-        .finally(() => {
-          this.loading = false;
+          this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
+          this.loading = false; // Сбрасываем loading, но не закрываем модальное окно
         });
-
-      this.isDownloadModalVisible = false;
-      if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
-        }
-      }
-      this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
     },
     
     closeDownloadModal () {
       this.isDownloadModalVisible = false;
       this.isDownloadImagesModalVisible = false;
       this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
+      this.formData = {
+        patient: '',
+        description: '',
+      };
+      if (this.$refs.singleDropzone) {
+        this.$refs.singleDropzone.removeAllFiles();
+      }
+      if (this.$refs.multipleDropzone) {
+        this.$refs.multipleDropzone.removeAllFiles();
+      }
     },
     
     openModal (row) {
