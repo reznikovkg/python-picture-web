@@ -273,6 +273,15 @@
           <ElButton type="primary" @click="() => submitEdit()">Сохранить!</ElButton>
         </span>
       </ElDialog>
+        <ImageCropperModal
+          :visible="isCropModalVisible"
+          :image-file="imageForCropping"
+          title="Обрезка изображения"
+          confirm-button-text="Применить обрезку"
+          :max-size-mb="1"
+          @confirm="handleCropConfirm"
+          @cancel="handleCropCancel"
+        />
     </div>
   </div>
 </template>
@@ -284,6 +293,7 @@ import { AUTH_TOKEN } from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
 import router from "@/router";
+import ImageCropperModal from '@/components/ImageCropperModal.vue';
 
 const list = {
   AK: 'Актинический кератоз (AK)',
@@ -299,6 +309,7 @@ const list = {
 export default {
   components: {
     VueDropzone,
+    ImageCropperModal
   },
   props: {
     data: {
@@ -318,6 +329,10 @@ export default {
     return {
       selectedRow: null,
       description: '',
+      
+      isCropModalVisible: false, // Добавляем состояние для модального окна обрезки
+      imageForCropping: null, // Файл для обрезки
+      croppedImage: null, // Обрезанное изображение
 
       dropzoneImageOptions: {
         url: '/upload',
@@ -487,6 +502,20 @@ export default {
     handleFileAdded: function (file) {
       console.log('Файл добавлен:', file);
 
+       if (this.isDownloadModalVisible) {
+        this.imageForCropping = file;
+        this.isCropModalVisible = true;
+        
+        // Скрываем стандартное сообщение Dropzone
+        const dropzoneElement = this.$refs.myDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Изображение загружено, настройте обрезку';
+        }
+        
+        return;
+      }
+
       this.uploadedFiles.push(file);
 
       if (this.uploadedFiles.length > 1) {
@@ -497,20 +526,55 @@ export default {
         }
       }
 
-      if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = '';
-        }
-      }
+      // if (this.uploadedFiles.length === 1) {
+      //   const dropzoneElement = this.$refs.myDropzone.$el;
+      //   const messageElement = dropzoneElement.querySelector('.dz-message');
+      //   if (messageElement) {
+      //     messageElement.innerText = '';
+      //   }
+      // }
 
-      setTimeout(() => {
-        const successMarks = document.querySelectorAll('.dz-success-mark');
-        const errorMarks = document.querySelectorAll('.dz-error-mark');
-        successMarks.forEach(mark => mark.remove());
-        errorMarks.forEach(mark => mark.remove());
-      }, 0);
+      // setTimeout(() => {
+      //   const successMarks = document.querySelectorAll('.dz-success-mark');
+      //   const errorMarks = document.querySelectorAll('.dz-error-mark');
+      //   successMarks.forEach(mark => mark.remove());
+      //   errorMarks.forEach(mark => mark.remove());
+      // }, 0);
+    },
+    
+    handleCropConfirm(croppedFile) {
+      console.log('Обрезанный файл:', croppedFile);
+      
+      // Сохраняем обрезанное изображение
+      this.croppedImage = croppedFile;
+      this.uploadedFiles = [croppedFile];
+      
+      // Обновляем сообщение в Dropzone
+      const dropzoneElement = this.$refs.myDropzone.$el;
+      const messageElement = dropzoneElement.querySelector('.dz-message');
+      if (messageElement) {
+        messageElement.innerText = 'Изображение обрезано и готово к загрузке';
+      }
+      
+      // Закрываем модальное окно обрезки
+      this.isCropModalVisible = false;
+    },
+    
+    handleCropCancel() {
+      // Удаляем файл из Dropzone если обрезка отменена
+      if (this.imageForCropping && this.$refs.myDropzone) {
+        this.$refs.myDropzone.removeFile(this.imageForCropping);
+      }
+      
+      this.imageForCropping = null;
+      this.isCropModalVisible = false;
+      
+      // Восстанавливаем стандартное сообщение
+      const dropzoneElement = this.$refs.myDropzone.$el;
+      const messageElement = dropzoneElement.querySelector('.dz-message');
+      if (messageElement) {
+        messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
+      }
     },
     
     handleSubmits () {
@@ -557,15 +621,27 @@ export default {
     
     handleSubmit () {
       console.log('Данные, полученные из формы:');
-      console.log('Файл:', this.uploadedFiles[0]);
+      console.log('Файл:', this.croppedImage || this.uploadedFiles[0]);
       console.log('Пациент:', this.formData.patient);
       console.log('Описание:', this.formData.description);
 
-      if (this.uploadedFiles.length === 0) {
+      // if (this.uploadedFiles.length === 0) {
+      //   this.$message.error('Пожалуйста, загрузите изображение.');
+      //   return;
+      // }
+
+      // if (!this.formData.patient || !this.formData.description) {
+      //   this.$message.error('Пожалуйста, заполните все поля.');
+      //   return;
+      // }
+
+      const imageFile = this.croppedImage || this.uploadedFiles[0];
+      
+      if (!imageFile) {
         this.$message.error('Пожалуйста, загрузите изображение.');
         return;
       }
-
+      
       if (!this.formData.patient || !this.formData.description) {
         this.$message.error('Пожалуйста, заполните все поля.');
         return;
@@ -574,7 +650,8 @@ export default {
       this.loading = true;
 
       this.predictData({
-        selectedFile: this.uploadedFiles[0],
+      //  selectedFile: this.uploadedFiles[0],
+        selectedFile: imageFile,
         patient: this.formData.patient,
         description: this.formData.description
       })
@@ -603,13 +680,49 @@ export default {
       this.$refs.myDropzone.removeAllFiles();
     },
     
-    closeDownloadModal () {
+    // closeDownloadModal () {
+    //   this.isDownloadModalVisible = false;
+    //   this.isDownloadImagesModalVisible = false;
+    //   this.uploadedFiles = [];
+    //   this.formData = [];
+    //   this.$refs.myDropzone.removeAllFiles();
+    // },
+    closeDownloadModal() {
       this.isDownloadModalVisible = false;
       this.isDownloadImagesModalVisible = false;
+      this.isCropModalVisible = false; // Закрываем окно обрезки если открыто
       this.uploadedFiles = [];
+      this.croppedImage = null;
+      this.imageForCropping = null;
       this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
+      if (this.$refs.myDropzone) {
+        this.$refs.myDropzone.removeAllFiles();
+      }
+      
+      // Восстанавливаем стандартное сообщение
+      const dropzoneElement = this.$refs.myDropzone?.$el;
+      const messageElement = dropzoneElement?.querySelector('.dz-message');
+      if (messageElement) {
+        messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
+      }
     },
+
+    resetForm() {
+      this.uploadedFiles = [];
+      this.croppedImage = null;
+      this.imageForCropping = null;
+      this.formData = {
+        patient: '',
+        description: '',
+      };
+      
+      if (this.$refs.myDropzone) {
+        this.$refs.myDropzone.removeAllFiles();
+      }
+    },
+
+
+
     
     openModal (row) {
       this.selectedRow = {
