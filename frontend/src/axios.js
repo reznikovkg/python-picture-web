@@ -20,7 +20,8 @@ axiosInstance.interceptors.request.use(config => {
             method: config.method,
             url: config.url,
             params: config.params,
-            hasFiles: this.hasFilesInFormData(config.data),
+            //hasFiles: this.hasFilesInFormData(config.data),
+            hasFiles: hasFilesInFormData(config.data),
         });
     } else {
         console.log('Отправка запроса:', {

@@ -107,12 +107,13 @@ const actions = {
         formData.append('patient', patient);
         formData.append('description', description);
         formData.append('image', selectedFile);
-
+        
         // Логирование информации о файле
         console.log('Отправка файла на анализ:', {
             fileName: selectedFile.name,
             fileType: selectedFile.type,
-            fileSize: this.formatFileSize(selectedFile.size),
+            //fileSize: this.formatFileSize(selectedFile.size),
+            fileSize: (selectedFile.size / (1024*1024)).toFixed(2) + 'MB',
             patient: patient,
             description: description
         });
@@ -164,7 +165,8 @@ const actions = {
             files: selectedFiles.map(file => ({
                 name: file.name,
                 type: file.type,
-                size: this.formatFileSize(file.size)
+                //size: this.formatFileSize(file.size)
+                size: (selectedFile.size / (1024*1024)).toFixed(2) + 'MB'
             }))
         });
 
