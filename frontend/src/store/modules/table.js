@@ -50,7 +50,6 @@ const mutations = {
         state.pagination = { ...state.pagination, ...pagination };
     }
 };
-
 const actions = {
     fetchData({ commit, rootGetters, state }, filters = {}) {
         commit('SET_LOADING', true);
@@ -70,7 +69,7 @@ const actions = {
             page_size: currentFilters.page_size,
             show: currentFilters.show
         };
-        
+
         return axiosInstance.get(`cnn_table/${authToken}/get`, { params })
             .then(response => {
                 if (response.data.success) {
@@ -166,7 +165,7 @@ const actions = {
                 name: file.name,
                 type: file.type,
                 //size: this.formatFileSize(file.size)
-                size: (selectedFile.size / (1024*1024)).toFixed(2) + 'MB'
+                size: (selectedFiles.size / (1024*1024)).toFixed(2) + 'MB'
             }))
         });
 
@@ -360,15 +359,6 @@ const actions = {
 
     clearError({ commit }) {
         commit('CLEAR_ERROR');
-    },
-
-    // Вспомогательная функция для форматирования размера файла
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 };
 

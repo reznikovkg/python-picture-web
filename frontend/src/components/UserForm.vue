@@ -200,26 +200,21 @@ export default {
       })
     },
 
-    async submitForm() {
+    submitForm() {
       this.loading = true
       
-      try {
-        // подготовка данные для отправки
-        const formData = { ...this.form }
-        
-        // если при редактировании пароль не указан, не отправить его
-        if (this.isEditing && !formData.password) {
-          delete formData.password
-        }
-
-        // эмитация события с данными формы
-        this.$emit('submit', formData)
-      } catch (error) {
-        console.error('Form submission error:', error)
-        this.$message.error('Ошибка при сохранении формы')
-      } finally {
-        this.loading = false
+      // подготовка данных для отправки
+      const formData = { ...this.form }
+      
+      // если при редактировании пароль не указан, не отправить его
+      if (this.isEditing && !formData.password) {
+        delete formData.password
       }
+
+      // эмитация события с данными формы и коллбэком для завершения загрузки
+      this.$emit('submit', formData, () => {
+        this.loading = false
+      })
     },
 
     handleCancel() {
