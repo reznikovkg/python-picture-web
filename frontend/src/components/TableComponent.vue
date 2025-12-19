@@ -701,8 +701,11 @@ export default {
           console.error('Ошибка предсказания:', error);
           this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
           this.loading = false;
+        })
+        .finally(() => {
+          this.loading = false;
         });
-
+        
     },
     
     handleSubmit () {
@@ -737,7 +740,10 @@ export default {
           console.error('Ошибка предсказания:', error);
           this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
           this.loading = false; // Сбрасываем loading, но не закрываем модальное окно
-        });
+        })
+         .finally(() => {
+      this.loading = false;
+    });
     },
     
     closeDownloadModal () {
