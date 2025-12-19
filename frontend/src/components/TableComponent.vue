@@ -32,7 +32,7 @@
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
             <ElButton @click="closeDownloadModal">Отмена</ElButton>
-            <ElButton type="primary" @click="handleSubmit" :disabled="uploadedFiles.length === 0">Сохранить</ElButton>
+            <ElButton type="primary" @click="handleSubmit" :disabled="uploadedFiles.length === 0" :loading="loading" >Сохранить</ElButton>
           </span>
         </ElDialog>
 
@@ -54,7 +54,7 @@
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
             <ElButton @click="closeDownloadModal">Отмена</ElButton>
-            <ElButton type="primary" @click="handleSubmits" :disabled="uploadedFiles.length === 0">Сохранить</ElButton>
+            <ElButton type="primary" @click="handleSubmits" :disabled="uploadedFiles.length === 0" :loading="loading" >Сохранить</ElButton>
           </span>
         </ElDialog>
 

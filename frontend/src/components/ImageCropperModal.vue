@@ -26,7 +26,15 @@
         </div>
         <div class="file-info">
           <p v-if="originalFileInfo">
-            Исходный файл: {{ originalFileInfo.name }} ({{ formatFileSize(originalFileInfo.size) }})
+            <span>Исходный файл:</span>
+            <span class="file-name-container">
+              <span class="file-name" :title="originalFileInfo.name">
+                {{ originalFileInfo.name }}
+              </span>
+              <span class="file-size">
+                ({{ formatFileSize(originalFileInfo.size) }})
+              </span>
+            </span>
           </p>
           <p v-if="croppedFileInfo">
             После обрезки: {{ formatFileSize(croppedFileInfo.size) }}
@@ -464,14 +472,32 @@ export default {
         margin: 5px 0;
         font-size: 12px;
         color: #606266;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        
+        &:last-child {
+          margin-bottom: 0;
+        }
       }
       
-      .compression-alert {
-        margin-top: 10px;
-        
-        /deep/ .el-alert__title {
-          font-size: 12px;
-        }
+      .file-name-container {
+        flex: 1;
+        display: flex;
+        min-width: 0;
+      }
+      
+      .file-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+      }
+      
+      .file-size {
+        flex-shrink: 0;
+        margin-left: 4px;
       }
     }
   }
@@ -483,16 +509,6 @@ export default {
   gap: 10px;
 }
 
-@media (max-width: 900px) {
-  .cropper-container {
-    flex-direction: column;
-    
-    .preview-container {
-      width: 100%;
-      margin-top: 20px;
-    }
-  }
-}
 </style>
 
 <style lang="less">
