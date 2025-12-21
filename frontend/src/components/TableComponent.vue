@@ -225,7 +225,7 @@
         </template>
       </ElTable>
 
-      <!-- Модальное окно с результатами -->
+      <!-- Модальное окно с результатами - ИСПРАВЛЕННАЯ ВЕРСИЯ -->
       <ElDialog
         v-if="selectedRow"
         :visible.sync="isSelected"
@@ -1049,6 +1049,7 @@ export default {
 
 <!-- Scoped стили только для компонента -->
 <style scoped lang="less">
+// Стили для модального окна с результатами - ИСПРАВЛЕННАЯ ВЕРСИЯ
 .modal-content {
   &__container {
     display: flex;
@@ -1096,6 +1097,35 @@ export default {
     
     &:hover {
       background: #909399;
+    }
+  }
+}
+
+// Адаптивные стили для маленьких экранов
+@media (max-height: 768px) {
+  .modal-content {
+    &__container {
+      max-height: 60vh;
+    }
+  }
+  
+  .modal-image-section {
+    .modal-image {
+      max-height: 30vh;
+    }
+  }
+}
+
+@media (max-height: 600px) {
+  .modal-content {
+    &__container {
+      max-height: 55vh;
+    }
+  }
+  
+  .modal-image-section {
+    .modal-image {
+      max-height: 25vh;
     }
   }
 }
