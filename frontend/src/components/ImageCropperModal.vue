@@ -19,7 +19,6 @@
       <div class="preview-container">
         <h4>Предпросмотр (1x1):</h4>
         
-        <!-- Добавляем инструкцию -->
         <div class="preview-instruction">
           <ElAlert
             type="info"
@@ -38,7 +37,6 @@
             ref="preview"
             class="preview"
           />
-          <!-- Добавляем только крестик по центру -->
           <div class="preview-grid">
             <div class="grid-center"></div>
           </div>
