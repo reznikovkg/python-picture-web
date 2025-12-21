@@ -18,11 +18,30 @@
       
       <div class="preview-container">
         <h4>Предпросмотр (1x1):</h4>
+        
+        <!-- Добавляем инструкцию -->
+        <div class="preview-instruction">
+          <ElAlert
+            type="info"
+            :closable="false"
+            show-icon
+            class="instruction-alert"
+          >
+            <template slot="title">
+              Объект исследования<br>следует расположить<br>по центру изображения
+            </template>
+          </ElAlert>
+        </div>
+        
         <div class="preview-wrapper">
           <div 
             ref="preview"
             class="preview"
           />
+          <!-- Добавляем только крестик по центру -->
+          <div class="preview-grid">
+            <div class="grid-center"></div>
+          </div>
         </div>
         <div class="file-info">
           <p v-if="originalFileInfo">
@@ -52,9 +71,18 @@
     </div>
     
     <div slot="footer" class="modal-footer">
-      <ElButton @click="handleCancel">
-        Отмена
-      </ElButton>
+      <div class="footer-left">
+        <ElButton @click="handleCancel">
+          Отмена
+        </ElButton>
+        <ElButton 
+          type="primary" 
+          @click="handleChooseAnother"
+          :disabled="imageLoading"
+        >
+          Выбрать другой файл
+        </ElButton>
+      </div>
       <ElButton 
         type="primary" 
         @click="handleConfirm"
@@ -96,21 +124,29 @@ export default {
       croppedFileInfo: null,
       showCompressionWarning: false,
       compressionWarningText: '',
-      dialogVisible: false,
       cropperInstance: null
+    };
+  },
+  computed: {
+    dialogVisible: {
+      get() {
+        return this.visible;
+      },
+      set(value) {
+        this.$emit('update:visible', value);
+      }
     }
   },
   watch: {
     visible: {
       immediate: true,
       handler(newVal) {
-        this.dialogVisible = newVal
         if (newVal && this.imageFile) {
           this.$nextTick(() => {
-            this.loadImage()
-          })
+            this.loadImage();
+          });
         } else {
-          this.reset()
+          this.reset();
         }
       }
     },
@@ -119,8 +155,8 @@ export default {
       handler(newFile) {
         if (newFile && this.visible) {
           this.$nextTick(() => {
-            this.loadImage()
-          })
+            this.loadImage();
+          });
         }
       }
     }
@@ -167,170 +203,182 @@ export default {
     
     loadImage() {
       if (!this.imageFile) {
-        this.imageSrc = ''
-        return
+        this.imageSrc = '';
+        return;
       }
 
       this.originalFileInfo = {
         name: this.imageFile.name,
         size: this.imageFile.size
-      }
+      };
 
       this.imageLoading = true;
-      const reader = new FileReader()
+      const reader = new FileReader();
 
       reader.onload = (e) => {
-        this.imageSrc = e.target.result
+        this.imageSrc = e.target.result;
         // сброс информации о обрезанном файле при загрузке нового
-        this.croppedFileInfo = null
-        this.showCompressionWarning = false
+        this.croppedFileInfo = null;
+        this.showCompressionWarning = false;
         
         // Переинициализация кроппера с новым изображением
         this.$nextTick(() => {
           this.initCropper();
         });
-      }
+      };
 
       reader.onerror = () => {
         this.imageLoading = false;
         this.$message.error('Ошибка загрузки изображения');
-      }
+      };
 
-      reader.readAsDataURL(this.imageFile)
+      reader.readAsDataURL(this.imageFile);
     },
 
     updatePreview() {
-      if (!this.cropperInstance) return;
+      if (!this.cropperInstance) {
+        return;
+      }
 
       // получение данных обрезки для предпросмотра
       const canvas = this.cropperInstance.getCroppedCanvas({
         width: 200,
         height: 200
-      })
+      });
 
-      if (!canvas) return
+      if (!canvas) {
+        return;
+      }
 
       // очистка предпросмотра
-      const preview = this.$refs.preview
+      const preview = this.$refs.preview;
       if (preview) {
-        preview.innerHTML = ''
-        preview.appendChild(canvas)
+        preview.innerHTML = '';
+        preview.appendChild(canvas);
       }
     },
 
     formatFileSize(bytes) {
-      if (bytes === 0) return '0 Bytes'
-      const k = 1024
-      const sizes = ['Bytes', 'KB', 'MB', 'GB']
-      const i = Math.floor(Math.log(bytes) / Math.log(k))
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+      if (bytes === 0) {
+        return '0 Bytes';
+      }
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     },
 
     compressImage(blob, quality = 0.8, maxSizeMB = 1) {
       return new Promise((resolve, reject) => {
-        const maxSize = maxSizeMB * 1024 * 1024 // 1 MB в байтах
+        const maxSize = maxSizeMB * 1024 * 1024; // 1 MB в байтах
         
         // если изображение уже меньше maxSize, возвращаем его
         if (blob.size <= maxSize) {
-          resolve(blob)
-          return
+          resolve(blob);
+          return;
         }
 
-        const img = new Image()
-        const url = URL.createObjectURL(blob)
+        const img = new Image();
+        const url = URL.createObjectURL(blob);
         
         img.onload = () => {
-          URL.revokeObjectURL(url)
+          URL.revokeObjectURL(url);
           
-          const canvas = document.createElement('canvas')
-          const ctx = canvas.getContext('2d')
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
           
           // установка размеров canvas
-          canvas.width = img.width
-          canvas.height = img.height
+          canvas.width = img.width;
+          canvas.height = img.height;
           
           // отрисовка изображения на canvas
-          ctx.drawImage(img, 0, 0)
+          ctx.drawImage(img, 0, 0);
           
           // сжатие изображения
           canvas.toBlob((compressedBlob) => {
-            if (compressedBlob.size <= maxSize) {
-              resolve(compressedBlob)
-            } else {
+            if (compressedBlob.size <= maxSize) 
+            {
+              resolve(compressedBlob);
+            }
+            else 
+            {
               // рекурсивное сжатие с уменьшением качества
-              if (quality > 0.1) {
-                const newQuality = quality - 0.1
+              if (quality > 0.1)
+              {
+                const newQuality = quality - 0.1;
                 this.compressImage(blob, newQuality, maxSizeMB)
                   .then(resolve)
-                  .catch(reject)
-              } else {
-                reject(new Error('Не удалось сжать изображение до требуемого размера'))
+                  .catch(reject);
+              }
+              else 
+              {
+                reject(new Error('Не удалось сжать изображение до требуемого размера'));
               }
             }
-          }, 'image/jpeg', quality)
-        }
+          }, 'image/jpeg', quality);
+        };
         
         img.onerror = () => {
-          URL.revokeObjectURL(url)
-          reject(new Error('Ошибка загрузки изображения для сжатия'))
-        }
+          URL.revokeObjectURL(url);
+          reject(new Error('Ошибка загрузки изображения для сжатия'));
+        };
         
-        img.src = url
-      })
+        img.src = url;
+      });
     },
 
     getCroppedImage() {
       return new Promise((resolve, reject) => {
         if (!this.cropperInstance) {
-          reject(new Error('Кроппер не инициализирован'))
-          return
+          reject(new Error('Кроппер не инициализирован'));
+          return;
         }
 
         // получение обрезанного canvas
         const canvas = this.cropperInstance.getCroppedCanvas({
           width: 500,
           height: 500
-        })
+        });
 
         if (!canvas) {
-          reject(new Error('Не удалось получить обрезанное изображение'))
-          return
+          reject(new Error('Не удалось получить обрезанное изображение'));
+          return;
         }
 
         // конвертация canvas в blob
         canvas.toBlob((blob) => {
           if (!blob) {
-            reject(new Error('Не удалось создать изображение'))
-            return
+            reject(new Error('Не удалось создать изображение'));
+            return;
           }
 
           // обновление информации о размере после обрезки
           this.croppedFileInfo = {
             size: blob.size
-          }
+          };
 
           // проверка необходимости сжатия (больше 1 МБ)
           if (blob.size > 1024 * 1024) {
-            this.showCompressionWarning = true
-            this.compressionWarningText = 'Изображение больше 1 МБ. Выполняется сжатие...'
+            this.showCompressionWarning = true;
+            this.compressionWarningText = 'Изображение больше 1 МБ. Выполняется сжатие...';
             
             this.compressImage(blob, 0.8, 1)
               .then((compressedBlob) => {
-                this.croppedFileInfo.size = compressedBlob.size
-                this.compressionWarningText = 'Изображение сжато до ' + this.formatFileSize(compressedBlob.size)
-                resolve(compressedBlob)
+                this.croppedFileInfo.size = compressedBlob.size;
+                this.compressionWarningText = 'Изображение сжато до ' + this.formatFileSize(compressedBlob.size);
+                resolve(compressedBlob);
               })
               .catch((error) => {
-                console.warn('Не удалось сжать изображение:', error)
+                console.warn('Не удалось сжать изображение:', error);
                 // если не удалось сжать, возвращаем исходное обрезанное изображение
-                resolve(blob)
-              })
+                resolve(blob);
+              });
           } else {
-            this.showCompressionWarning = false
-            resolve(blob)
+            this.showCompressionWarning = false;
+            resolve(blob);
           }
-        }, 'image/jpeg', 0.95) // начальное качество 95%
-      })
+        }, 'image/jpeg', 0.95); // начальное качество 95%
+      });
     },
 
     handleConfirm() {
@@ -339,7 +387,7 @@ export default {
         return;
       }
       
-      this.loading = true
+      this.loading = true;
       
       this.getCroppedImage()
         .then((blob) => {
@@ -348,57 +396,108 @@ export default {
             [blob],
             this.generateCroppedFileName(this.imageFile.name),
             { type: 'image/jpeg' }
-          )
+          );
           
-          this.$emit('confirm', croppedFile)
-          this.closeDialog()
+          this.$emit('confirm', croppedFile);
+          this.closeDialog();
         })
         .catch((error) => {
-          console.error('Ошибка при обрезке изображения:', error)
-          this.$message.error('Ошибка при обрезке изображения: ' + error.message)
-          this.loading = false
-        })
+          console.error('Ошибка при обрезке изображения:', error);
+          this.$message.error('Ошибка при обрезке изображения: ' + error.message);
+          this.loading = false;
+        });
     },
 
     generateCroppedFileName(originalName) {
-      const nameWithoutExt = originalName.replace(/\.[^/.]+$/, "")
-      const timestamp = new Date().getTime()
-      return `${nameWithoutExt}_cropped_${timestamp}.jpg`
+      const nameWithoutExt = originalName.replace(/\.[^/.]+$/, "");
+      const timestamp = new Date().getTime();
+      return `${nameWithoutExt}_cropped_${timestamp}.jpg`;
     },
 
     handleCancel() {
-      this.closeDialog()
+      this.closeDialog();
+    },
+    
+    handleChooseAnother() {
+      // Создаем input элемент для выбора файла
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.display = 'none';
+      
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {     
+          if (!file.type.match('image.*')) {
+            this.$message.error('Пожалуйста, выберите файл изображения');
+            return;
+          }
+          
+          // Обновляем изображение
+          this.originalFileInfo = {
+            name: file.name,
+            size: file.size
+          };
+          
+          this.imageLoading = true;
+          const reader = new FileReader();
+          
+          reader.onload = (e) => {
+            this.imageSrc = e.target.result;
+            this.croppedFileInfo = null;
+            this.showCompressionWarning = false;
+            
+            // Переинициализация кроппера с новым изображением
+            this.$nextTick(() => {
+              this.initCropper();
+            });
+          };
+          
+          reader.onerror = () => {
+            this.imageLoading = false;
+            this.$message.error('Ошибка загрузки изображения');
+          };
+          
+          reader.readAsDataURL(file);
+        }
+        
+        // Удаляем input элемент
+        document.body.removeChild(input);
+      };
+      
+      // Добавляем input в DOM и кликаем по нему
+      document.body.appendChild(input);
+      input.click();
     },
 
     handleBeforeClose(done) {
       if (this.loading) {
-        return // не закрывается если идет загрузка
+        return; // не закрывается если идет загрузка
       }
-      this.closeDialog()
+      this.closeDialog();
       if (done) {
-        done()
+        done();
       }
     },
 
     closeDialog() {
-      this.$emit('update:visible', false)
-      this.$emit('cancel')
-      this.reset()
+      this.dialogVisible = false;
+      this.$emit('cancel');
+      this.reset();
     },
 
     reset() {
-      this.loading = false
-      this.imageLoading = false
-      this.imageSrc = ''
-      this.originalFileInfo = null
-      this.croppedFileInfo = null
-      this.showCompressionWarning = false
-      this.compressionWarningText = ''
-      this.dialogVisible = false
-      this.destroyCropper()
+      this.loading = false;
+      this.imageLoading = false;
+      this.imageSrc = '';
+      this.originalFileInfo = null;
+      this.croppedFileInfo = null;
+      this.showCompressionWarning = false;
+      this.compressionWarningText = '';
+      this.destroyCropper();
     }
   }
-}
+};
 </script>
 
 <style lang="less" scoped>
@@ -443,7 +542,21 @@ export default {
       color: #303133;
     }
     
+    .preview-instruction {
+      margin-bottom: 10px;
+      
+      .instruction-alert {
+        font-size: 12px;
+        
+        .el-alert__title {
+          font-size: 13px;
+          line-height: 1.3;
+        }
+      }
+    }
+    
     .preview-wrapper {
+      position: relative;
       flex: 1;
       display: flex;
       align-items: center;
@@ -459,10 +572,54 @@ export default {
         overflow: hidden;
         border: 1px solid #dcdfe6;
         border-radius: 4px;
+        position: relative;
+        z-index: 1;
         
         canvas {
           max-width: 100%;
           max-height: 100%;
+        }
+      }
+      
+      .preview-grid {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        pointer-events: none;
+        z-index: 2;
+        
+        .grid-center {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 20px;
+          height: 20px;
+          transform: translate(-50%, -50%);
+          
+          &::before,
+          &::after {
+            content: '';
+            position: absolute;
+            background-color: rgba(0, 255, 0, 0.7);
+          }
+          
+          &::before {
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            transform: translateY(-50%);
+          }
+          
+          &::after {
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            transform: translateX(-50%);
+          }
         }
       }
     }
@@ -505,8 +662,13 @@ export default {
 
 .modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 10px;
+  
+  .footer-left {
+    display: flex;
+    gap: 10px;
+  }
 }
 
 </style>
