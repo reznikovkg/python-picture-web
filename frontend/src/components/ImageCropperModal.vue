@@ -40,8 +40,8 @@
             ref="preview"
             class="preview"
           />
-          <!-- Крестик по центру -->
-          <div class="grid-center"></div>
+          <!-- Полый квадрат по центру -->
+          <div class="grid-square"></div>
         </div>
         <div class="file-info">
           <p v-if="originalFileInfo">
@@ -551,40 +551,20 @@ export default {
         }
       }
       
-      // центральный крестик
-      .grid-center {
+      // полый квадрат по центру (1/3 от предпросмотра)
+      .grid-square {
         position: absolute;
         top: 50%;
         left: 50%;
-        width: 24px;
-        height: 24px;
+        width: 66px; // 200px / 3 ≈ 66.67px (возьмём по 66)
+        height: 66px; // 200px / 3 ≈ 66.67px
         transform: translate(-50%, -50%);
         pointer-events: none;
         z-index: 2;
-        
-        &::before,
-        &::after {
-          content: '';
-          position: absolute;
-          background-color: #00FF00;
-          box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
-        }
-        
-        &::before {
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 3px;
-          transform: translateY(-50%);
-        }
-        
-        &::after {
-          left: 50%;
-          top: 0;
-          bottom: 0;
-          width: 3px;
-          transform: translateX(-50%);
-        }
+        border: 3px solid #00FF00;
+        box-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+        box-sizing: border-box;
+        background-color: transparent;
       }
     }
     
