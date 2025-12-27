@@ -50,7 +50,6 @@ const mutations = {
         state.pagination = { ...state.pagination, ...pagination };
     }
 };
-
 const actions = {
     fetchData({ commit, rootGetters, state }, filters = {}) {
         commit('SET_LOADING', true);
@@ -70,7 +69,7 @@ const actions = {
             page_size: currentFilters.page_size,
             show: currentFilters.show
         };
-        
+
         return axiosInstance.get(`cnn_table/${authToken}/get`, { params })
             .then(response => {
                 if (response.data.success) {
@@ -107,6 +106,16 @@ const actions = {
         formData.append('patient', patient);
         formData.append('description', description);
         formData.append('image', selectedFile);
+        
+        // Логирование информации о файле
+        console.log('Отправка файла на анализ:', {
+            fileName: selectedFile.name,
+            fileType: selectedFile.type,
+            //fileSize: this.formatFileSize(selectedFile.size),
+            fileSize: (selectedFile.size / (1024*1024)).toFixed(2) + 'MB',
+            patient: patient,
+            description: description
+        });
 
         return axiosInstance.post(`/back/classification-image/${authToken}`, formData)
             .then(response => {
@@ -146,6 +155,19 @@ const actions = {
         const authToken = rootGetters['auth/getUserToken'];
         const BATCH_SIZE = 50;
         const batches = [];
+
+        // Логирование информации о файлах
+        console.log('Отправка пакета файлов на анализ:', {
+            fileCount: selectedFiles.length,
+            patient: patient,
+            description: description,
+            files: selectedFiles.map(file => ({
+                name: file.name,
+                type: file.type,
+                //size: this.formatFileSize(file.size)
+                size: (selectedFiles.size / (1024*1024)).toFixed(2) + 'MB'
+            }))
+        });
 
         for (let i = 0; i < selectedFiles.length; i += BATCH_SIZE) {
             batches.push(selectedFiles.slice(i, i + BATCH_SIZE));

@@ -21,19 +21,57 @@
               <ElInput v-model="formData.description" type="textarea" placeholder="Введите описание"></ElInput>
             </ElFormItem>
             <ElFormItem>
+              <!-- Дропзон для одиночной загрузки - показывается только если нет обрезанного изображения -->
               <vue-dropzone
-                ref="myDropzone"
-                id="dropzone"
+                ref="singleDropzone"
+                id="dropzone-single"
                 :options="dropzoneImageOptions"
-                @vdropzone-file-added="handleFileAdded"
-                class="controls-container__modal-window--dropzone">
+                @vdropzone-file-added="handleSingleFileAdded"
+                @vdropzone-click="handleSingleDropzoneClick"
+                class="controls-container__modal-window--dropzone"
+                v-if="!croppedImageUrl"
+              >
               </vue-dropzone>
+              
+              <!-- Превью обрезанного изображения -->
+              <div v-else class="cropped-image-preview" @click="handlePreviewClick">
+                <div class="preview-header">
+                  <span>Обрезанное изображение</span>
+                  <ElButton 
+                    type="text" 
+                    icon="el-icon-refresh" 
+                    @click.stop="replaceCroppedImage" 
+                    title="Заменить изображение"
+                  >
+                  </ElButton>
+                </div>
+                <img :src="croppedImageUrl" alt="Обрезанное изображение" class="cropped-preview-img" />
+                <div class="preview-footer">
+                  <span class="file-info">{{ croppedFileName }}</span>
+                  <ElButton 
+                    type="text" 
+                    icon="el-icon-delete" 
+                    @click.stop="removeCroppedImage" 
+                    title="Удалить изображение"
+                  >
+                  </ElButton>
+                </div>
+              </div>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmit">Сохранить</ElButton>
-        </span>
+            <ElButton @click="closeDownloadModal">
+              Отмена
+            </ElButton>
+            <ElButton
+              type="primary"
+              @click="handleSubmit"
+              :loading="loading" 
+              :disabled="uploadedFiles.length === 0"
+            >
+              Сохранить
+            </ElButton>
+          </span>
         </ElDialog>
 
         <ElDialog
@@ -44,19 +82,38 @@
           <ElForm>
             <ElFormItem>
               <vue-dropzone
-                ref="myDropzone"
-                id="dropzone"
+                ref="multipleDropzone"
+                id="dropzone-multiple"
                 :options="dropzoneImagesOptions"
-                @vdropzone-file-added="handleFileAdded"
+                @vdropzone-file-added="handleMultipleFileAdded"
                 class="controls-container__modal-window--dropzone">
               </vue-dropzone>
             </ElFormItem>
           </ElForm>
           <span slot="footer" class="controls-container__dialog-footer">
-          <ElButton @click="closeDownloadModal">Отмена</ElButton>
-          <ElButton type="primary" @click="handleSubmits">Сохранить</ElButton>
-        </span>
+            <ElButton @click="closeDownloadModal">
+              Отмена
+            </ElButton>
+            <ElButton
+              type="primary"
+              @click="handleSubmits"
+              :loading="loading" 
+              :disabled="uploadedFiles.length === 0"
+            >
+              Сохранить
+            </ElButton>
+          </span>
         </ElDialog>
+
+        <!-- Модальное окно для обрезки изображения -->
+
+        <ImageCropperModal
+          :visible.sync="cropperModalVisible"
+          :image-file="imageForCropping"
+          title="Обрезка изображения (требуется формат 1:1)"
+          @confirm="handleCroppedImage"
+          @cancel="handleCropCancel"
+        />
       </div>
 
       <!-- Таблица с классом для глобальных стилей -->
@@ -172,76 +229,89 @@
         v-if="selectedRow"
         :visible.sync="isSelected"
         title="Результат"
-        width="40%"
-        class="table-container__modal-window--image"
+        width="70%"
+        custom-class="result-modal-dialog"
+        :modal="true"
+        :close-on-click-modal="false"
+        :show-close="true"
         @close="() => closeModal()"
       >
-        <div v-if="selectedRow.image">
-          <img :src="selectedRow.image" alt="Изображение"/>
-          <div class="modal-probabilities">
-            <div class="field">
-              <span class="field-label">Вероятность 1 модели:</span>
-              <span
-                class="field-value">{{ listObj[selectedRow.model_1] }} -
-                {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
+        <div class="modal-content-wrapper">
+          <div class="modal-content" v-if="selectedRow.image">
+            <div class="modal-image-section">
+              <img :src="selectedRow.image" alt="Изображение" class="modal-image"/>
             </div>
-            <div class="field">
-              <span class="field-label">Вероятность 2 модели:</span>
-              <span
-                class="field-value">{{ listObj[selectedRow.model_2] }} -
-                {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
+            <div class="modal-text-section">
+              <div class="modal-probabilities">
+                <div class="field">
+                  <span class="field-label">Вероятность 1 модели:</span>
+                  <span class="field-value">{{ listObj[selectedRow.model_1] }} - {{ (parseFloat(selectedRow.model_1_probability) * 100).toFixed(2) }}%</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Вероятность 2 модели:</span>
+                  <span class="field-value">{{ listObj[selectedRow.model_2] }} - {{ (parseFloat(selectedRow.model_2_probability) * 100).toFixed(2) }}%</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Вероятность 3 модели:</span>
+                  <span class="field-value">{{ listObj[selectedRow.model_3] }} - {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
+                </div>
+                <div class="field">
+                  <span class="field-label">Вероятность ансамбля:</span>
+                  <span class="field-value">
+                    {{ listObj[selectedRow.ensemble] }} - {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%
+                  </span>
+                </div>
+              </div>
+              
+              <div class="modal-fields">
+                <!-- Информация об авторе для админов и модераторов -->
+                <div v-if="(userRole === 'admin' || userRole === 'moderator') && selectedRow.author" class="field">
+                  <span class="field-label">Автор:</span>
+                  <span class="field-value">{{ selectedRow.author }}</span>
+                </div>
+
+                <div class="field">
+                  <span class="field-label">Пациент:</span>
+                  <span class="field-value">{{ selectedRow.patient }}</span>
+                </div>
+
+                <div class="field">
+                  <span class="field-label">Описание:</span>
+                  <span class="field-value description-text">{{ selectedRow.description }}</span>
+                </div>
+
+                <div class="field">
+                  <span class="field-label">Диагноз:</span>
+                  <span class="field-value">{{ getDiagnosisLabel(selectedRow.diagnosis) }}</span>
+                  <i v-if="selectedRow.diagnosis === selectedRow.ensemble && !selectedRow.is_deleted" class="table-container__result-check el-icon-check"></i>
+                </div>
+
+                <!-- Статус удаления -->
+                <div v-if="selectedRow.is_deleted" class="field">
+                  <span class="field-label">Статус:</span>
+                  <ElTag type="danger" size="small">
+                    Удалено
+                  </ElTag>
+                </div>
+              </div>
             </div>
-            <div class="field">
-              <span class="field-label">Вероятность 3 модели:</span>
-              <span
-                class="field-value">{{ listObj[selectedRow.model_3] }} -
-                {{ (parseFloat(selectedRow.model_3_probability) * 100).toFixed(2) }}%</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Вероятность ансамбля:</span>
-              <span class="field-value">
-                {{ listObj[selectedRow.ensemble] }} -
-                {{ (parseFloat(selectedRow.ensemble_probability) / 3 * 100).toFixed(2) }}%
-              </span>
-            </div>
+          </div>
+          <div v-else>
+            <p>Загрузка изображения...</p>
           </div>
         </div>
-        <div v-else>
-          <p>Загрузка изображения...</p>
-        </div>
-        <div class="modal-fields">
-          <!-- Информация об авторе для админов и модераторов -->
-          <div v-if="(userRole === 'admin' || userRole === 'moderator') && selectedRow.author" class="field">
-            <span class="field-label">Автор:</span>
-            <span class="field-value">{{ selectedRow.author }}</span>
-          </div>
-
-          <div class="field">
-            <span class="field-label">Пациент:</span>
-            <span class="field-value">{{ selectedRow.patient }}</span>
-          </div>
-
-          <div class="field">
-            <span class="field-label">Описание:</span>
-            <span class="field-value">{{ selectedRow.description }}</span>
-          </div>
-
-          <div class="field">
-            <span class="field-label">Диагноз:</span>
-            <span class="field-value">{{ getDiagnosisLabel(selectedRow.diagnosis) }}</span>
-
-            <i v-if="selectedRow.diagnosis === selectedRow.ensemble && !selectedRow.is_deleted" class="table-container__result-check el-icon-check"></i>
-          </div>
-
-          <!-- Статус удаления -->
-          <div v-if="selectedRow.is_deleted" class="field">
-            <span class="field-label">Статус:</span>
-            <ElTag type="danger" size="small">Удалено</ElTag>
-          </div>
-        </div>
-        <div slot="footer">
-          <ElButton @click="() => openEditModal()" :disabled="selectedRow.is_deleted">Редактировать</ElButton>
-          <ElButton @click="() => closeModal()">Закрыть</ElButton>
+        
+        <div slot="footer" class="modal-footer-buttons">
+          <ElButton 
+            @click="() => openEditModal()" 
+            :disabled="selectedRow.is_deleted"
+            type="primary"
+          >
+            Редактировать
+          </ElButton>
+          <ElButton @click="() => closeModal()">
+            Закрыть
+          </ElButton>
         </div>
       </ElDialog>
       
@@ -269,8 +339,15 @@
           </ElFormItem>
         </ElForm>
         <span slot="footer" class="dialog-footer">
-          <ElButton @click="() => closeEditModal()">Отмена</ElButton>
-          <ElButton type="primary" @click="() => submitEdit()">Сохранить!</ElButton>
+          <ElButton @click="() => closeEditModal()">
+            Отмена
+          </ElButton>
+          <ElButton 
+            type="primary" 
+            @click="() => submitEdit()"
+          >
+            Сохранить!
+          </ElButton>
         </span>
       </ElDialog>
     </div>
@@ -284,6 +361,7 @@ import { AUTH_TOKEN } from "@/views/LoginView.vue";
 import axiosInstance from "@/axios";
 import { ROUTES } from "@/router";
 import router from "@/router";
+import ImageCropperModal from '@/components/ImageCropperModal.vue';
 
 const list = {
   AK: 'Актинический кератоз (AK)',
@@ -299,6 +377,7 @@ const list = {
 export default {
   components: {
     VueDropzone,
+    ImageCropperModal
   },
   props: {
     data: {
@@ -322,10 +401,12 @@ export default {
       dropzoneImageOptions: {
         url: '/upload',
         autoProcessQueue: false,
-        addRemoveLinks: false,
+        addRemoveLinks: true,
         maxFiles: 1,
-        acceptedFiles: '.jpg, .jpeg',
-        dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора'
+        acceptedFiles: '.jpg, .jpeg, .png, .bmp',
+        dictDefaultMessage: 'Перетащите файл сюда или нажмите для выбора',
+        dictRemoveFile: 'Удалить',
+        dictCancelUpload: 'Отмена'
       },
       dropzoneImagesOptions: {
         url: '/upload',
@@ -333,7 +414,7 @@ export default {
         addRemoveLinks: false,
         previewsContainer: false,
         maxFiles: 500,
-        acceptedFiles: '.jpg, .jpeg',
+        acceptedFiles: '.jpg, .jpeg, .png, .bmp',
         dictDefaultMessage: 'Перетащите файлы сюда или нажмите для выбора'
       },
 
@@ -352,14 +433,23 @@ export default {
         description: '',
         diagnosis: '',
       },
+      
+      // Данные для обрезки изображений
+      cropperModalVisible: false,
+      imageForCropping: null,
+      currentDropzoneType: 'single', // 'single' или 'multiple'
+      
+      // Данные для отображения обрезанного изображения
+      croppedImageUrl: null,
+      croppedFileName: '',
     };
   },
   computed: {
     isSelected () {
-      return !!this.selectedRow
+      return !!this.selectedRow;
     },
     listObj () {
-      return list
+      return list;
     },
     diagnosisOptions () {
       return [
@@ -371,16 +461,16 @@ export default {
         { label: 'Меланоцитарный невус (NV)', value: 'NV' },
         { label: 'Плоскоклеточный рак (SCC)', value: 'SCC' },
         { label: 'Сосудистое поражение (VASC)', value: 'VASC' },
-      ]
+      ];
     },
     diagnosisLabels () {
       const t = {
         'undefined': '-'
-      }
+      };
       this.diagnosisOptions.forEach(i => {
-        t[i.value] = i.label
-      })
-      return t
+        t[i.value] = i.label;
+      });
+      return t;
     }
   },
   methods: {
@@ -464,11 +554,11 @@ export default {
         }
       )
         .then(() => {
-          localStorage.removeItem(AUTH_TOKEN)
-          router.push(ROUTES.LOGIN)
+          localStorage.removeItem(AUTH_TOKEN);
+          router.push(ROUTES.LOGIN);
         })
         .catch(() => {
-          console.log("Выход отменён")
+          console.log("Выход отменён");
         });
     },
     
@@ -484,13 +574,71 @@ export default {
       this.isDownloadImagesModalVisible = true;
     },
     
-    handleFileAdded: function (file) {
-      console.log('Файл добавлен:', file);
+    handleSingleFileAdded (file) {
+      console.log('Файл добавлен для одиночной загрузки:', file);
 
+      // сохранение файла для обрезки и отображение модального окна
+      this.imageForCropping = file;
+      this.currentDropzoneType = 'single';
+      this.cropperModalVisible = true;
+      
+      // удаление файла из дропзона, так как будет использоваться обрезанный
+      this.$refs.singleDropzone.removeFile(file);
+    },
+    
+    handleSingleDropzoneClick(file) {
+      // при клике на уже загруженный файл в дропзоне
+      if (file && this.uploadedFiles.length > 0) {
+        this.$confirm('Хотите заменить изображение?', 'Замена изображения', {
+          confirmButtonText: 'Да',
+          cancelButtonText: 'Нет',
+          type: 'warning'
+        }).then(() => {
+          this.removeCroppedImage();
+        }).catch(() => {});
+      }
+    },
+    
+    handlePreviewClick() {
+      // при клике на превью открываем окно обрезки с текущим файлом
+      if (this.uploadedFiles.length > 0 && this.uploadedFiles[0]) {
+        this.imageForCropping = this.uploadedFiles[0];
+        this.currentDropzoneType = 'single';
+        this.cropperModalVisible = true;
+      }
+    },
+    
+    replaceCroppedImage() {
+      this.removeCroppedImage();
+      // дропзонка для выбора нового файла
+      setTimeout(() => {
+        if (this.$refs.singleDropzone && this.$refs.singleDropzone.$el) {
+          const messageElement = this.$refs.singleDropzone.$el.querySelector('.dz-message');
+          if (messageElement) {
+            messageElement.click();
+          }
+        }
+      }, 100);
+    },
+    
+    removeCroppedImage() {
+      this.croppedImageUrl = null;
+      this.croppedFileName = '';
+      this.uploadedFiles = [];
+      if (this.$refs.singleDropzone) {
+        this.$refs.singleDropzone.removeAllFiles();
+      }
+    },
+    
+    handleMultipleFileAdded (file) {
+      console.log('Файл добавлен для массовой загрузки:', file);
+      
+      // Для массовой загрузки сразу добавляем файл в uploadedFiles
       this.uploadedFiles.push(file);
 
+      // Обновляем сообщение в дропзоне
       if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
+        const dropzoneElement = this.$refs.multipleDropzone.$el;
         const messageElement = dropzoneElement.querySelector('.dz-message');
         if (messageElement) {
           messageElement.innerText = `Количество загруженных файлов: ${ this.uploadedFiles.length }`;
@@ -498,7 +646,7 @@ export default {
       }
 
       if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
+        const dropzoneElement = this.$refs.multipleDropzone.$el;
         const messageElement = dropzoneElement.querySelector('.dz-message');
         if (messageElement) {
           messageElement.innerText = '';
@@ -513,6 +661,120 @@ export default {
       }, 0);
     },
     
+    handleCroppedImage(croppedFile) {
+      if (!croppedFile) {
+        this.$message.error('Не удалось обрезать изображение');
+        return;
+      }
+      
+      console.log('Обрезанный файл получен:', croppedFile);
+      
+      // Создаем URL для превью
+      this.croppedImageUrl = URL.createObjectURL(croppedFile);
+      this.croppedFileName = croppedFile.name;
+      
+      // Добавляем обрезанный файл в uploadedFiles
+      this.uploadedFiles = [croppedFile];
+      
+      this.cropperModalVisible = false;
+      this.imageForCropping = null;
+    },
+    
+    handleCropCancel() {
+      console.log('Обрезка отменена');
+      this.cropperModalVisible = false;
+      this.imageForCropping = null;
+      
+      // Если отменили обрезку и нет обрезанного изображения, показываем дропзон
+      if (!this.croppedImageUrl && this.$refs.singleDropzone) {
+        const dropzoneElement = this.$refs.singleDropzone.$el;
+        const messageElement = dropzoneElement.querySelector('.dz-message');
+        if (messageElement) {
+          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
+        }
+      }
+    },
+    
+    compressImageForBatch(file, quality = 0.8, maxSizeMB = 1) {
+      return new Promise((resolve, reject) => {
+        const maxSize = maxSizeMB * 1024 * 1024; // 1 MB в байтах
+        
+        // Если файл не изображение или уже меньше maxSize, возвращаем его
+        if (!file.type.startsWith('image/') || file.size <= maxSize) {
+          resolve(file);
+          return;
+        }
+        
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Сохраняем оригинальные пропорции
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          
+          // Вычисляем новые размеры, сохраняя пропорции
+          let newWidth = originalWidth;
+          let newHeight = originalHeight;
+          
+          // Если изображение слишком большое, уменьшаем его
+          const maxDimension = 2000; // Максимальный размер стороны
+          if (originalWidth > maxDimension || originalHeight > maxDimension) {
+            const ratio = Math.min(maxDimension / originalWidth, maxDimension / originalHeight);
+            newWidth = Math.floor(originalWidth * ratio);
+            newHeight = Math.floor(originalHeight * ratio);
+          }
+          
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          
+          // Отрисовка изображения на canvas
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
+          
+          // Сжатие изображения
+          canvas.toBlob((compressedBlob) => {
+            if (compressedBlob.size <= maxSize) {
+              const compressedFile = new File(
+                [compressedBlob],
+                file.name,
+                { type: 'image/jpeg' }
+              );
+              resolve(compressedFile);
+            } else {
+              // Рекурсивное сжатие с уменьшением качества
+              if (quality > 0.1) {
+                const newQuality = quality - 0.1;
+                this.compressImageForBatch(file, newQuality, maxSizeMB)
+                  .then(resolve)
+                  .catch(reject);
+              } else {
+                // Если не удалось сжать до нужного размера, возвращаем максимально сжатое
+                const compressedFile = new File(
+                  [compressedBlob],
+                  file.name,
+                  { type: 'image/jpeg' }
+                );
+                resolve(compressedFile);
+              }
+            }
+          }, 'image/jpeg', quality);
+        };
+        
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          console.warn('Ошибка загрузки изображения для сжатия, возвращаем исходный файл');
+          resolve(file); // В случае ошибки возвращаем исходный файл
+        };
+        
+        img.src = url;
+      });
+    },
+    
     handleSubmits () {
       if (this.uploadedFiles.length === 0) {
         this.$message.error('Пожалуйста, загрузите изображения.');
@@ -525,34 +787,36 @@ export default {
       }
 
       this.loading = true;
-
-      this.predictListData({
-        selectedFiles: this.uploadedFiles,
-        patient: this.formData.patient,
-        description: this.formData.description
-      }).then(() => {
-        this.$message.success('Данные успешно отправлены и обработаны!');
-        this.$emit('refresh');
-      })
+      
+      // Сжимаем файлы, если они больше 1 МБ
+      const compressionPromises = this.uploadedFiles.map(file => {
+        return this.compressImageForBatch(file, 0.8, 1);
+      });
+      
+      Promise.all(compressionPromises)
+        .then((compressedFiles) => {
+          console.log('Файлы сжаты:', compressedFiles);
+          
+          return this.predictListData({
+            selectedFiles: compressedFiles,
+            patient: this.formData.patient,
+            description: this.formData.description
+          });
+        })
+        .then(() => {
+          this.$message.success('Данные успешно отправлены и обработаны!');
+          this.$emit('refresh');
+          this.closeDownloadModal(); // Закрываем после успешной отправки
+        })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
-          this.$message.error('Ошибка при выполнении предсказания.');
+          this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
+          this.loading = false;
         })
         .finally(() => {
           this.loading = false;
         });
-
-      this.isDownloadImagesModalVisible = false;
-      if (this.uploadedFiles.length > 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файлы сюда или нажмите для выбора';
-        }
-      }
-      this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
+        
     },
     
     handleSubmit () {
@@ -581,40 +845,42 @@ export default {
         .then(() => {
           this.$message.success('Данные успешно отправлены и обработаны!');
           this.$emit('refresh');
+          this.closeDownloadModal(); // Закрываем после успешной отправки
         })
         .catch(error => {
           console.error('Ошибка предсказания:', error);
-          this.$message.error('Ошибка при выполнении предсказания.');
+          this.$message.error('Ошибка при выполнении предсказания: ' + (error.message || ''));
+          this.loading = false; // Сбрасываем loading, но не закрываем модальное окно
         })
-        .finally(() => {
+         .finally(() => {
           this.loading = false;
         });
-
-      this.isDownloadModalVisible = false;
-      if (this.uploadedFiles.length === 1) {
-        const dropzoneElement = this.$refs.myDropzone.$el;
-        const messageElement = dropzoneElement.querySelector('.dz-message');
-        if (messageElement) {
-          messageElement.innerText = 'Перетащите файл сюда или нажмите для выбора';
-        }
-      }
-      this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
     },
     
     closeDownloadModal () {
       this.isDownloadModalVisible = false;
       this.isDownloadImagesModalVisible = false;
       this.uploadedFiles = [];
-      this.formData = [];
-      this.$refs.myDropzone.removeAllFiles();
+      this.formData = {
+        patient: '',
+        description: '',
+      };
+      // Сбрасываем также обрезанное изображение
+      this.croppedImageUrl = null;
+      this.croppedFileName = '';
+      
+      if (this.$refs.singleDropzone) {
+        this.$refs.singleDropzone.removeAllFiles();
+      }
+      if (this.$refs.multipleDropzone) {
+        this.$refs.multipleDropzone.removeAllFiles();
+      }
     },
     
     openModal (row) {
       this.selectedRow = {
         ...row,
-      }
+      };
     },
     
     closeModal () {
@@ -625,7 +891,7 @@ export default {
       this.isEditModalVisible = true;
       this.editForm.id = this.selectedRow.id;
       this.editForm.description = this.selectedRow.description;
-      this.editForm.diagnosis = this.selectedRow.diagnosis
+      this.editForm.diagnosis = this.selectedRow.diagnosis;
 
       this.closeModal();
     },
@@ -644,16 +910,6 @@ export default {
         .then(() => {
           this.$message.success('Запись успешно обновлена!');
           this.$emit('refresh');
-
-          this.description = this.editForm.description;
-          this.diagnosis = this.editForm.diagnosis;
-
-          if (this.selectedRow && this.selectedRow.id === this.editForm.id) {
-            this.selectedRow.description = this.editForm.description;
-            this.selectedRow.diagnosis = this.editForm.diagnosis;
-          }
-
-          this.closeEditModal();
         })
         .catch((error) => {
           console.error('Ошибка при обновлении записи:', error);
@@ -778,29 +1034,153 @@ export default {
     filter: grayscale(50%);
   }
 }
+
+.result-modal-dialog {
+  .el-dialog {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    
+    &__header {
+      padding: 20px 20px 10px;
+      border-bottom: 1px solid #ebeef5;
+      flex-shrink: 0;
+      
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+    
+    &__body {
+      flex: 1;
+      overflow: hidden;
+      padding: 0;
+      max-height: calc(85vh - 120px);
+    }
+    
+    &__footer {
+      padding: 12px 20px;
+      border-top: 1px solid #ebeef5;
+      flex-shrink: 0;
+    }
+  }
+}
 </style>
 
 <!-- Scoped стили только для компонента -->
 <style scoped lang="less">
-.modal-fields {
-  margin-top: 20px;
+.modal-content-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
 
-  .field {
-    margin-bottom: 10px;
-    font-size: 14px;
-    color: #333;
+.modal-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px;
+}
 
-    .field-label {
-      font-weight: bold;
-      margin-right: 5px;
-      display: inline-block;
-      min-width: 120px;
-    }
+.modal-image-section {
+  flex-shrink: 0;
+  text-align: center;
+  margin-bottom: 20px;
+  
+  .modal-image {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid #dcdfe6;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+}
 
-    .field-value {
-      color: #666;
+.modal-text-section {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 10px;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: #c0c4cc;
+    border-radius: 3px;
+    
+    &:hover {
+      background: #909399;
     }
   }
+}
+
+// Стили для полей внутри модального окна
+.modal-probabilities,
+.modal-fields {
+  width: 100%;
+}
+
+.modal-probabilities {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+// Улучшенные стили для полей
+.field {
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  line-height: 1.4;
+  
+  .field-label {
+    font-weight: 600;
+    margin-right: 8px;
+    display: inline-block;
+    min-width: 160px;
+    color: #606266;
+    flex-shrink: 0;
+  }
+  
+  .field-value {
+    color: #303133;
+    flex: 1;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    
+    &.description-text {
+      max-height: 100px;
+      overflow-y: auto;
+      padding: 8px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      border: 1px solid #e9ecef;
+    }
+  }
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.table-container__result-check {
+  color: #67c23a;
+  font-size: 16px;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 
 .controls-container__modal-window--dropzone {
@@ -956,5 +1336,73 @@ img {
     font-size: 14px;
     margin-top: 8px;
   }
+}
+
+// Стили для превью обрезанного изображения
+.cropped-image-preview {
+  border: 2px dashed #409eff;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.3s;
+  
+  &:hover {
+    border-color: #66b1ff;
+  }
+  
+  .preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ebeef5;
+    
+    span {
+      font-weight: 500;
+      color: #409eff;
+    }
+    
+    .el-button {
+      padding: 5px;
+    }
+  }
+  
+  .cropped-preview-img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid #dcdfe6;
+  }
+  
+  .preview-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 5px;
+    border-top: 1px solid #ebeef5;
+    
+    .file-info {
+      font-size: 12px;
+      color: #909399;
+      max-width: 70%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .el-button {
+      padding: 5px;
+    }
+  }
+}
+
+.modal-footer-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
