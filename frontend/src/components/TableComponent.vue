@@ -229,12 +229,15 @@
         v-if="selectedRow"
         :visible.sync="isSelected"
         title="Результат"
-        width="40%"
-        class="table-container__modal-window--image"
+        width="70%"
+        custom-class="result-modal-dialog"
+        :modal="true"
+        :close-on-click-modal="false"
+        :show-close="true"
         @close="() => closeModal()"
       >
-        <div class="modal-content">
-          <div v-if="selectedRow.image" class="modal-content__container">
+        <div class="modal-content-wrapper">
+          <div class="modal-content" v-if="selectedRow.image">
             <div class="modal-image-section">
               <img :src="selectedRow.image" alt="Изображение" class="modal-image"/>
             </div>
@@ -298,10 +301,11 @@
           </div>
         </div>
         
-        <div slot="footer">
+        <div slot="footer" class="modal-footer-buttons">
           <ElButton 
             @click="() => openEditModal()" 
             :disabled="selectedRow.is_deleted"
+            type="primary"
           >
             Редактировать
           </ElButton>
@@ -1030,29 +1034,65 @@ export default {
     filter: grayscale(50%);
   }
 }
+
+.result-modal-dialog {
+  .el-dialog {
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    
+    &__header {
+      padding: 20px 20px 10px;
+      border-bottom: 1px solid #ebeef5;
+      flex-shrink: 0;
+      
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #303133;
+      }
+    }
+    
+    &__body {
+      flex: 1;
+      overflow: hidden;
+      padding: 0;
+      max-height: calc(85vh - 120px);
+    }
+    
+    &__footer {
+      padding: 12px 20px;
+      border-top: 1px solid #ebeef5;
+      flex-shrink: 0;
+    }
+  }
+}
 </style>
 
 <!-- Scoped стили только для компонента -->
 <style scoped lang="less">
+.modal-content-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .modal-content {
-  &__container {
-    display: flex;
-    flex-direction: column;
-    max-height: 70vh;
-    overflow: hidden;
-  }
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 20px;
 }
 
 .modal-image-section {
   flex-shrink: 0;
   text-align: center;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #ebeef5;
   margin-bottom: 20px;
   
   .modal-image {
     max-width: 100%;
-    max-height: 40vh;
+    max-height: 300px;
     object-fit: contain;
     border-radius: 4px;
     border: 1px solid #dcdfe6;
@@ -1063,8 +1103,7 @@ export default {
 .modal-text-section {
   flex: 1;
   overflow-y: auto;
-  min-height: 200px;
-  padding-right: 5px;
+  padding-right: 10px;
   
   &::-webkit-scrollbar {
     width: 6px;
@@ -1359,5 +1398,11 @@ img {
       padding: 5px;
     }
   }
+}
+
+.modal-footer-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
